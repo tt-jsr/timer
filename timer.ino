@@ -15,10 +15,12 @@ void setup() {
   pinMode(SER_DATA, OUTPUT);
   pinMode(SRCLR, OUTPUT);
   pinMode(RCLK, OUTPUT);
+  pinMode(AUDIO_CS, OUTPUT);
 
   setupDisplay();
   setupTimer();
   setupKeypad();
+  setupAudio();
 
   int num = createTimer(1*60+13);
   if (num < 0)

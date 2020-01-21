@@ -10,6 +10,7 @@ static const int SRCLK = 14;
 static const int SER_DATA = 15;
 static const int SRCLR = 24;
 static const int RCLK = 23;
+static const int AUDIO_CS = 28;     // ISD1760
 
 // Bit to set the column in the shift register
 static const int COL_1C1 = 1;
@@ -51,22 +52,33 @@ void setupDisplay();
 /*******************************************
  * Keypad functions
  */
-static const int KEY_0 = 0;
-static const int KEY_1 = 1;
-static const int KEY_2 = 2;
-static const int KEY_3 = 3;
-static const int KEY_4 = 4;
-static const int KEY_5 = 5;
-static const int KEY_6 = 6;
-static const int KEY_7 = 7;
-static const int KEY_8 = 8;
-static const int KEY_9 = 9;
-static const int KEY_HASH = 10;
-static const int KEY_STAR = 11;
-static const int KEY_REDIAL = 12;
+static const int KEY_NONE = 0;
+static const int KEY_0 = 1;
+static const int KEY_1 = 2;
+static const int KEY_2 = 3;
+static const int KEY_3 = 4;
+static const int KEY_4 = 5;
+static const int KEY_5 = 6;
+static const int KEY_6 = 7;
+static const int KEY_7 = 8;
+static const int KEY_8 = 9;
+static const int KEY_9 = 10;
+static const int KEY_HASH = 11;
+static const int KEY_STAR = 12;
+static const int KEY_REDIAL = 13;
 
 int getKey();
 void setupKeypad();
+
+/******************************************
+ * Audio functions
+ */
+int recordMessage();
+void playMessage(int);
+void ringTimer();
+void buzzer(int freq);
+
+void setupAudio();
 
 #endif TIMER_H_
 
