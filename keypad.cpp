@@ -19,49 +19,74 @@
 // G1C4   G1R4     Redial and Pause
 // unknown           Flash
 
-int table[COL_2C3][ROW_4];
-
-void setCol(int col)
+namespace keypad_ns
 {
-    digitalWrite(SRCLR, LOW);
-    digitalWrite(SRCLR, HIGH);
+    int scanMap[COL_2C3][ROW_4];
+    int keymap[15];
 
-    int b = 1 << col;
-    shiftOut(SER_DATA, SRCLK, MSBFIRST, b);
-    
-    digitalWrite(RCLK, HIGH);
-    digitalWrite(RCLK, LOW);
-}
-
-
-int getKey()
-{
-    for (int col = COL_1C1; col <= COL_2C3; ++col)
+    void setCol(int col)
     {
-        setCol(col);
-        for(int row = ROW_1; row <= ROW_4; ++row)
-        {
-            if (HIGH == digitalRead(row))
-                return table[col][row];
-        }
-    }
-    return KEY_NONE;
-}
+        digitalWrite(SRCLR, LOW);
+        digitalWrite(SRCLR, HIGH);
 
-void setupKeypad()
-{
-    memset(table, 0, sizeof(int)*COL_2C3*ROW_4);
-    table[COL_2C1][ROW_1] = KEY_1;
-    table[COL_2C2][ROW_1] = KEY_2;
-    table[COL_1C3][ROW_1] = KEY_3;
-    table[COL_2C1][ROW_2] = KEY_4;
-    table[COL_2C2][ROW_2] = KEY_5;
-    table[COL_2C3][ROW_2] = KEY_6;
-    table[COL_2C1][ROW_3] = KEY_7;
-    table[COL_1C2][ROW_3] = KEY_8;
-    table[COL_1C3][ROW_3] = KEY_9;
-    table[COL_1C2][ROW_4] = KEY_0;
-    table[COL_1C1][ROW_4] = KEY_STAR;
-    table[COL_1C2][ROW_4] = KEY_HASH;
-    table[COL_1C4][ROW_4] = KEY_REDIAL;
+        int b = 1 << col;
+        shiftOut(SER_DATA, SRCLK, MSBFIRST, b);
+        
+        digitalWrite(RCLK, HIGH);
+        digitalWrite(RCLK, LOW);
+    }
+
+    char keycode2char(int k)
+    {
+        if (k < 0 || k > KEY_REDIAL)
+            return keymap[KEY_NONE];
+        return keymap[k];
+    }
+
+    int getKey()
+    {
+        for (int col = COL_1C1; col <= COL_2C3; ++col)
+        {
+            setCol(col);
+            for(int row = ROW_1; row <= ROW_4; ++row)
+            {
+                if (HIGH == digitalRead(row))
+                    return scanMap[col][row];
+            }
+        }
+        return KEY_NONE;
+    }
+
+    void setup()
+    {
+        memset(scanMap, 0, sizeof(int)*COL_2C3*ROW_4);
+        scanMap[COL_2C1][ROW_1] = KEY_1;
+        scanMap[COL_2C2][ROW_1] = KEY_2;
+        scanMap[COL_1C3][ROW_1] = KEY_3;
+        scanMap[COL_2C1][ROW_2] = KEY_4;
+        scanMap[COL_2C2][ROW_2] = KEY_5;
+        scanMap[COL_2C3][ROW_2] = KEY_6;
+        scanMap[COL_2C1][ROW_3] = KEY_7;
+        scanMap[COL_1C2][ROW_3] = KEY_8;
+        scanMap[COL_1C3][ROW_3] = KEY_9;
+        scanMap[COL_1C2][ROW_4] = KEY_0;
+        scanMap[COL_1C1][ROW_4] = KEY_STAR;
+        scanMap[COL_1C2][ROW_4] = KEY_HASH;
+        scanMap[COL_1C4][ROW_4] = KEY_REDIAL;
+
+        keymap[KEY_NONE] = 'N';
+        keymap[KEY_0] = '0';
+        keymap[KEY_1] = '1';
+        keymap[KEY_2] = '2';
+        keymap[KEY_3] = '3';
+        keymap[KEY_4] = '4';
+        keymap[KEY_5] = '5';
+        keymap[KEY_6] = '6';
+        keymap[KEY_7] = '7';
+        keymap[KEY_8] = '8';
+        keymap[KEY_9] = '9';
+        keymap[KEY_HASH] = '#';
+        keymap[KEY_STAR] = '*';
+        keymap[KEY_REDIAL] = 'R';
+    }
 }

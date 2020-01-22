@@ -4,26 +4,29 @@
 #include <Fonts/FreeSans24pt7b.h>
 #include "timer.h"
 
-int recordMessage()
+namespace audio_ns
 {
-    return -1;
+    int recordMessage()
+    {
+        return -1;
+    }
+
+    void playMessage(int msg)
+    {
+
+    }
+
+    void ringTimer()
+    {
+
+    }
+
+    void buzzer(int freq)
+    {
+
+    }
+
+    void setup() 
+    {
+    }
 }
-
-void playMessage(int msg)
-{
-
-}
-
-void ringTimer()
-{
-
-}
-
-void buzzer(int freq)
-{
-
-}
-
-void setupAudio() {
-}
-

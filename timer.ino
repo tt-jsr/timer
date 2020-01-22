@@ -4,6 +4,8 @@
 #include <Fonts/FreeSans24pt7b.h>
 #include "timer.h"
 
+Loop *pLoop = new TimerTest();
+
 void setup() {
   Serial.begin(9600);
 
@@ -17,23 +19,15 @@ void setup() {
   pinMode(RCLK, OUTPUT);
   pinMode(AUDIO_CS, OUTPUT);
 
-  setupDisplay();
-  setupTimer();
-  setupKeypad();
-  setupAudio();
+  display_ns::setup();
+  timer_ns::setup();
+  keypad_ns::setup();
+  audio_ns::setup();
 
-  int num = createTimer(1*60+13);
-  if (num < 0)
-  {
-      display.print("error");
-      display.display();
-      for(;;);
-  }
-
+  pLoop->setup();
 }
 
+    
 void loop() {
-  // put your main code here, to run repeatedly:
-  showTimer(0);
-  delay(1000);
+    pLoop->loop();
 }
