@@ -6,12 +6,29 @@
 
 namespace display_ns
 {
-    int TEXT_X = 0;
-    int TEXT_Y = 0;
+    int TEXT_HEIGHT = 0;
     int TIMER_X = 0;
     int TIMER_Y = 0;
 
     Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+    void setLargeFont()
+    {
+      int x, y, w, h;
+
+      display.setFont(&FreeSans24pt7b);
+      display.getTextBounds("HELLO", 0, 0, &x, &y, &w, &h);
+      TEXT_HEIGHT = h;
+    }
+
+    void setSmallFont()
+    {
+      int x, y, w, h;
+      display.setFont(&FreeSans9pt7b);
+      display.clearDisplay();
+      display.getTextBounds("HELLO", 0, 0, &x, &y, &w, &h);
+      TEXT_HEIGHT = h;
+    }
 
     void showTimerExpired(int timerno, int secs)
     {
@@ -26,12 +43,11 @@ namespace display_ns
       int min = secs/60;
       secs = secs - min*60;
 
-      display.setFont(&FreeSans9pt7b);
-      display.clearDisplay();
-      display.setCursor(TEXT_X, TEXT_Y);     // Start at top-left corner
+      setSmallFont();
+      display.setCursor(0, TEXT_HEIGHT);     // Start at top-left corner
       snprintf(buf, sizeof(buf), "Timer %d Expired", timerno);
       display.print(buf);
-      display.setFont(&FreeSans24pt7b);
+      setLargeFont();
       snprintf(buf, sizeof(buf), "%02d:%02d", min, secs);
       display.setCursor(TIMER_X, TIMER_Y);
       display.print(buf);
@@ -48,16 +64,20 @@ namespace display_ns
 #endif
       int min = secs/60;
       secs = secs - min*60;
-      display.setFont(&FreeSans9pt7b);
-      display.clearDisplay();
-      display.setCursor(TEXT_X, TEXT_Y);     // Start at top-left corner
+      setSmallFont();
       snprintf(buf, sizeof(buf), "Timer %d", timerno);
       display.print(buf);
-      display.setFont(&FreeSans24pt7b);
+      setLargeFont();
       snprintf(buf, sizeof(buf), "%02d:%02d", min, secs);
       display.setCursor(TIMER_X, TIMER_Y);
       display.print(buf);
       display.display();
+    }
+
+    void clearDisplay()
+    {
+        display.clearDisplay();
+        display.setCursor(0, TEXT_HEIGHT);
     }
 
     void setup() {
@@ -75,15 +95,12 @@ namespace display_ns
       display.setCursor(0, 0);     // Start at top-left corner
       display.cp437(true);
 
+      setLargeFont();
       int x, y, w, h;
-      display.setFont(&FreeSans9pt7b);
-      display.clearDisplay();
-      display.getTextBounds("Timer", 0, 0, &x, &y, &w, &h);
-      TEXT_X = 0;
-      TEXT_Y = h;
-      display.setFont(&FreeSans24pt7b);
       display.getTextBounds("59:00", 0, 0, &x, &y, &w, &h);
       TIMER_Y = 64/2+h/2 + 10;
       TIMER_X = 128/2-w/2 - 5;
+
+      setSmallFont();
     }
 }

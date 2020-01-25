@@ -21,7 +21,8 @@
 
 namespace keypad_ns
 {
-    int scanMap[COL_2C3][ROW_4];
+    bool  keyDown(false);
+    KeyCode scanMap[KS_COL_2C3][KS_ROW_4];
     int keymap[15];
 
     void setCol(int col)
@@ -29,50 +30,75 @@ namespace keypad_ns
         digitalWrite(SRCLR, LOW);
         digitalWrite(SRCLR, HIGH);
 
-        int b = 1 << col;
-        shiftOut(SER_DATA, SRCLK, MSBFIRST, b);
+        digitalWrite(RCLK, LOW);
+        shiftOut(SER_DATA, SRCLK, MSBFIRST, 1<< col);
         
         digitalWrite(RCLK, HIGH);
         digitalWrite(RCLK, LOW);
     }
 
-    char keycode2char(int k)
+    char keycode2char(KeyCode k)
     {
         if (k < 0 || k > KEY_REDIAL)
             return keymap[KEY_NONE];
         return keymap[k];
     }
 
-    int getKey()
+    KeyCode getKey()
     {
-        for (int col = COL_1C1; col <= COL_2C3; ++col)
+        for (int col = KS_COL_1C1; col < KS_COL_2C3; ++col)
         {
             setCol(col);
-            for(int row = ROW_1; row <= ROW_4; ++row)
+            for(int row = KS_ROW_1; row < KS_ROW_4; ++row)
             {
-                if (HIGH == digitalRead(row))
+                int pin = 0;
+                switch (row)
+                {
+                case KS_ROW_1:
+                    pin = ROW_1;
+                    break;
+                case KS_ROW_2:
+                    pin = ROW_2;
+                    break;
+                case KS_ROW_3:
+                    pin = ROW_3;
+                    break;
+                case KS_ROW_4:
+                    pin = ROW_4;
+                    break;
+                }
+                if (HIGH == digitalRead(pin))
+                {
+                    if (keyDown == true)
+                        return KEY_NONE;  // don't repeat
+                    keyDown = true;
+                    char buf[64];
+                    sprintf(buf, "Pin: %d was high, row: %d col:%d", pin, row, col);
+                    Serial.println(buf);
                     return scanMap[col][row];
+                }
             }
         }
+        keyDown = false;
         return KEY_NONE;
     }
 
     void setup()
     {
-        memset(scanMap, 0, sizeof(int)*COL_2C3*ROW_4);
-        scanMap[COL_2C1][ROW_1] = KEY_1;
-        scanMap[COL_2C2][ROW_1] = KEY_2;
-        scanMap[COL_1C3][ROW_1] = KEY_3;
-        scanMap[COL_2C1][ROW_2] = KEY_4;
-        scanMap[COL_2C2][ROW_2] = KEY_5;
-        scanMap[COL_2C3][ROW_2] = KEY_6;
-        scanMap[COL_2C1][ROW_3] = KEY_7;
-        scanMap[COL_1C2][ROW_3] = KEY_8;
-        scanMap[COL_1C3][ROW_3] = KEY_9;
-        scanMap[COL_1C2][ROW_4] = KEY_0;
-        scanMap[COL_1C1][ROW_4] = KEY_STAR;
-        scanMap[COL_1C2][ROW_4] = KEY_HASH;
-        scanMap[COL_1C4][ROW_4] = KEY_REDIAL;
+        memset(scanMap, 0, sizeof(int)*KS_COL_2C3*KS_ROW_4);
+        scanMap[KS_COL_2C1][KS_ROW_1] = KEY_1;
+        scanMap[KS_COL_2C2][KS_ROW_1] = KEY_2;
+        scanMap[KS_COL_1C3][KS_ROW_1] = KEY_3;
+        scanMap[KS_COL_2C1][KS_ROW_2] = KEY_4;
+        scanMap[KS_COL_2C2][KS_ROW_2] = KEY_5;
+        scanMap[KS_COL_2C3][KS_ROW_2] = KEY_6;
+        scanMap[KS_COL_2C1][KS_ROW_3] = KEY_7;
+        scanMap[KS_COL_1C2][KS_ROW_3] = KEY_8;
+        scanMap[KS_COL_1C3][KS_ROW_3] = KEY_9;
+        scanMap[KS_COL_1C2][KS_ROW_4] = KEY_0;
+        scanMap[KS_COL_1C1][KS_ROW_4] = KEY_STAR;
+        scanMap[KS_COL_1C2][KS_ROW_4] = KEY_HASH;
+        scanMap[KS_COL_1C4][KS_ROW_4] = KEY_REDIAL;
 
         keymap[KEY_NONE] = 'N';
         keymap[KEY_0] = '0';
@@ -88,5 +114,7 @@ namespace keypad_ns
         keymap[KEY_HASH] = '#';
         keymap[KEY_STAR] = '*';
         keymap[KEY_REDIAL] = 'R';
+
+        digitalWrite(SRCLR, LOW);
     }
 }

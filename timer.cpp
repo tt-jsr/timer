@@ -31,10 +31,18 @@ namespace timer_ns
        timers[timerno] = 0;
     }
 
+    int isTimerRunning(int timerno)
+    {
+        if (timerno < 0 || timerno >= MAX_TIMERS)
+            return -1;
+        return timers[timerno] != 0;
+    }
+
     // Return  the remianing time. If < 0, it has expired and is 
     // now counting up.
     int checkTimer(int timerno)
     {
+
       int now = millis()/1000;
       return timers[timerno]-now;
     }

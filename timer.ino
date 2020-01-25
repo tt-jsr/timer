@@ -3,8 +3,9 @@
 #include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSans24pt7b.h>
 #include "timer.h"
+#include "test.h"
 
-Loop *pLoop = new TimerTest();
+Application *pApp = new KeypadTest();
 
 void setup() {
   Serial.begin(9600);
@@ -24,10 +25,10 @@ void setup() {
   keypad_ns::setup();
   audio_ns::setup();
 
-  pLoop->setup();
+  pApp->setup();
 }
 
     
 void loop() {
-    pLoop->loop();
+    pApp->loop();
 }
