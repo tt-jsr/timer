@@ -8,47 +8,74 @@ namespace timer_ns
 {
     int timers[MAX_TIMERS];
 
+    /**************************************/
     int createTimer(int timeout)
     {
         for (int i = 0; i < MAX_TIMERS; i++)
         {
-            if (timers[i] == 0)
+            if (timers[i] == TIMER_INVALID)
             {
                 timers[i] = millis()/1000 + timeout;
-#if defined(MONITOR)
-                char buf[32];
-                sprintf(buf, "Timer %d = %d secs\n", i, timeout);
-                Serial.print(buf);
-#endif
+                //char buf[32];
+                //sprintf(buf, "Timer %d = %d secs\n", i, timeout);
+                //Serial.print(buf);
                 return i;
             }
         }
         return -1;
     }
 
+    /**************************************/
+    int nextTimer()
+    {
+        int closest = TIMER_INVALID;
+        for (int i = 0; i <MAX_TIMERS; i++)
+        {
+            int t = checkTimer(i);
+            if (t != TIMER_INVALID)
+            {
+                if (t < 0)
+                    t -=t;
+                if (t < closest)
+                    closest = t;
+            }
+        }
+        return closest;
+    }
+
+    /**************************************/
     void clearTimer(int timerno)
     {
-       timers[timerno] = 0;
+      if (timerno < 0 || timerno >MAX_TIMERS)
+          return;
+       timers[timerno] = TIMER_INVALID;
     }
 
-    int isTimerRunning(int timerno)
+    /**************************************/
+    bool isTimerRunning(int timerno)
     {
         if (timerno < 0 || timerno >= MAX_TIMERS)
-            return -1;
-        return timers[timerno] != 0;
+            return false;
+        return timers[timerno] != TIMER_INVALID;
     }
 
-    // Return  the remianing time. If < 0, it has expired and is 
-    // now counting up.
+    /**************************************/
     int checkTimer(int timerno)
     {
+      if (timerno < 0 || timerno > MAX_TIMERS)
+          return TIMER_INVALID;
+      if (timers[timerno] == TIMER_INVALID)
+          return TIMER_INVALID;
 
       int now = millis()/1000;
       return timers[timerno]-now;
     }
 
+
+    /**************************************/
     void setup() 
     {
-      memset(timers, 0, sizeof(int)*MAX_TIMERS);
+      for (int i= 0; i < MAX_TIMERS; i++)
+          timers[i] = TIMER_INVALID;
     }
 }

@@ -33,16 +33,14 @@ void TimerTest::loop()
 void KeypadTest::setup()
 {
     display_ns::setSmallFont();
+    display_ns::display.setCursor(0,display_ns::TEXT_HEIGHT);
     nchar = 0;
     display_ns::display.display();
 }
 
 void KeypadTest::loop()
 {
-    keypad_ns::KeyCode k = keypad_ns::getKey();
-    if (k == keypad_ns::KEY_NONE)
-        return;
-    char c = keypad_ns::keycode2char(k);
+    char c  = keypad_ns::getKey();
     display_ns::display.print(c);
     display_ns::display.display();
     ++nchar;
@@ -53,18 +51,4 @@ void KeypadTest::loop()
     }
 }
 
-/*****************************************/
-
-void TimerTest2::setup()
-{
-
-}
-
-void TimerTest2::loop()
-{
-    keypad_ns::KeyCode k = keypad_ns::getKey();
-    if (k == keypad_ns::KEY_NONE)
-        return;
-
-}
 

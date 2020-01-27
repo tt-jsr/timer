@@ -22,7 +22,7 @@
 namespace keypad_ns
 {
     bool  keyDown(false);
-    KeyCode scanMap[KS_COL_2C3][KS_ROW_4];
+    KeyCode scanMap[KS_COL_2C3+1][KS_ROW_4+1];
     int keymap[15];
 
     void setCol(int col)
@@ -44,12 +44,12 @@ namespace keypad_ns
         return keymap[k];
     }
 
-    KeyCode getKey()
+    KeyCode getKeyCode()
     {
-        for (int col = KS_COL_1C1; col < KS_COL_2C3; ++col)
+        for (int col = KS_COL_1C1; col <= KS_COL_2C3; ++col)
         {
             setCol(col);
-            for(int row = KS_ROW_1; row < KS_ROW_4; ++row)
+            for(int row = KS_ROW_1; row <= KS_ROW_4; ++row)
             {
                 int pin = 0;
                 switch (row)
@@ -72,15 +72,33 @@ namespace keypad_ns
                     if (keyDown == true)
                         return KEY_NONE;  // don't repeat
                     keyDown = true;
-                    char buf[64];
-                    sprintf(buf, "Pin: %d was high, row: %d col:%d", pin, row, col);
-                    Serial.println(buf);
+                    //char buf[64];
+                    //sprintf(buf, "Pin: %d was high, row: %d col:%d", pin, row, col);
+                    //Serial.println(buf);
                     return scanMap[col][row];
                 }
             }
         }
         keyDown = false;
         return KEY_NONE;
+    }
+
+    char getKeyPress()
+    {
+        KeyCode k = getKeyCode();
+        if (k == KEY_NONE)
+            return 0;
+        return keycode2char(k);
+    }
+
+    char getKey()
+    {
+        KeyCode k = KEY_NONE;
+        while (k == KEY_NONE)
+        {
+            k = getKeyCode();
+        }
+        return keycode2char(k);
     }
 
     void setup()
@@ -95,9 +113,9 @@ namespace keypad_ns
         scanMap[KS_COL_2C1][KS_ROW_3] = KEY_7;
         scanMap[KS_COL_1C2][KS_ROW_3] = KEY_8;
         scanMap[KS_COL_1C3][KS_ROW_3] = KEY_9;
-        scanMap[KS_COL_1C2][KS_ROW_4] = KEY_0;
+        scanMap[KS_COL_1C3][KS_ROW_4] = KEY_HASH;
         scanMap[KS_COL_1C1][KS_ROW_4] = KEY_STAR;
-        scanMap[KS_COL_1C2][KS_ROW_4] = KEY_HASH;
+        scanMap[KS_COL_1C2][KS_ROW_4] = KEY_0;
         scanMap[KS_COL_1C4][KS_ROW_4] = KEY_REDIAL;
 
         keymap[KEY_NONE] = 'N';

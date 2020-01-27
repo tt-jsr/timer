@@ -34,10 +34,21 @@ static const int KS_ROW_4 = 3;
 namespace timer_ns
 {
     static const int MAX_TIMERS = 15;
+    static const int TIMER_INVALID = 1000000;
     extern int timers[MAX_TIMERS];
 
+    // Return the timerno on success, otherwise -1
     int createTimer(int timeout);
+
     void clearTimer(int timerno);
+
+    bool isTimerRunning(int timerno);
+
+    int nextTimer();
+
+    // Return  the remianing time. If < 0, it has expired and is 
+    // now counting up.
+    // returns TIMER_INVALID if the timer is not valid
     int checkTimer(int timerno);
     void setup();
 }
@@ -52,6 +63,9 @@ namespace display_ns
     static const int SCREEN_HEIGHT = 64;
     static const int OLED_RESET = 4;
     extern Adafruit_SSD1306 display;
+    extern int TEXT_HEIGHT; // Height of current font
+    extern int TIMER_X;
+    extern int TIMER_Y;
 
     void clearDisplay();
     void setSmallFont();
@@ -84,8 +98,12 @@ namespace keypad_ns
         , KEY_REDIAL = 13
     };
 
-    KeyCode getKey();
-    char keycode2char(KeyCode k);
+    // Returns a keypresss. Blocks until q key is pressed
+    char getKey();
+
+    // Return a keyy, or 0 if none pressed
+    char getKeyPress();
+
     void setup();
 }
 

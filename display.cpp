@@ -65,6 +65,7 @@ namespace display_ns
       int min = secs/60;
       secs = secs - min*60;
       setSmallFont();
+      display.setCursor(0, TEXT_HEIGHT);
       snprintf(buf, sizeof(buf), "Timer %d", timerno);
       display.print(buf);
       setLargeFont();
