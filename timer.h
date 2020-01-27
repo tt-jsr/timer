@@ -2,7 +2,7 @@
 #define TIMER_H_
 
 // Assign pins
-static const int BUZZER = 3;
+static const int BUZZER = 2;
 static const int RCLK = 5;
 static const int SRCLR = 6;
 static const int HOOK = 9;
