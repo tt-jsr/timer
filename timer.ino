@@ -60,31 +60,110 @@ struct TimerApp : public Application
         return timer_ns::createTimer(secs);
     }
 
-    void loop()
+    void keyDispatch()
     {
          char printbuf[64];
          char c = keypad_ns::getKeyPress();
-         if (c == '#')
-         {
-             currentTimer_ = setTimer();
-             sprintf(printbuf, "created timer: %d", currentTimer_);
-             Serial.println(printbuf);
-         }
+         if (c == 0)
+             return;
+
+         // Cancel a timer
          if (c == 'R')
          {
              timer_ns::clearTimer(currentTimer_);
              currentTimer_ = timer_ns::nextTimer();
+             buzzerOff_ = 0;
+             buzzerOn_ = 0;
+             noTone(BUZZER);
          }
+
+         if (currentTimer_ != timer_ns::TIMER_INVALID)
+         {
+            // We can't create or switch timers if the current
+            // one has expired
+            if (timer_ns::checkTimer(currentTimer_) <= 0)
+                return;
+         }
+
+         // Create a new timer
+         if (c == '#')
+         {
+             currentTimer_ = setTimer();
+             //sprintf(printbuf, "created timer: %d", currentTimer_);
+             //Serial.println(printbuf);
+         }
+
+         // Switch to a timer
          if (c >= '0' && c <= '9')
          {
             int timerno = c - '0';
             if (timer_ns::isTimerRunning(timerno))
             {
-                sprintf(printbuf, "set current timer: %d", timerno);
-                Serial.println(printbuf);
+                //sprintf(printbuf, "set current timer: %d", timerno);
+                //Serial.println(printbuf);
                 currentTimer_ = timerno;
             }
          }
+    }
+
+    void switchToExpiredTimer()
+    {
+         if (currentTimer_ != timer_ns::TIMER_INVALID && timer_ns::checkTimer(currentTimer_) < 0)
+         {
+             return;  // Current timer is expired
+         }
+
+         // Switch current timer if one has expired
+         for (int t = 0; t < timer_ns::MAX_TIMERS; t++)
+         {
+             int timeRemaining = timer_ns::checkTimer(t);
+                 Serial.print("checking timer ");
+                 Serial.print(t);
+                 Serial.print(" is ");
+                 Serial.println(timeRemaining);
+
+             if (timeRemaining != timer_ns::TIMER_INVALID && timeRemaining < 0)
+             {
+                 Serial.println("switching to expired");
+                 currentTimer_ = t;
+                 buzzerOff_ = millis() + 1000;
+                 tone(BUZZER, 1000);
+             }
+         }
+    }
+
+    void runBuzzer()
+    {
+        if (currentTimer_ == timer_ns::TIMER_INVALID)
+            return;
+        if (timer_ns::checkTimer(currentTimer_) < 0)
+        {
+            int now = millis();
+            if (buzzerOn_ == 0 && buzzerOff_ == 0)
+                buzzerOn_= now; // get things started
+            if (buzzerOn_ != 0)
+            {
+                if (now < buzzerOn_)
+                    return;
+                Serial.println("buzzer on");
+                tone(BUZZER, 1000);
+                buzzerOff_ = now + 1000;
+                buzzerOn_ = 0;
+            }
+            if (buzzerOff_ != 0)
+            {
+                if (now < buzzerOff_)
+                    return;
+                Serial.println("buzzer off");
+                noTone(BUZZER);
+                buzzerOff_ = 0;
+                buzzerOn_ = now + 1000;
+            }
+        }
+    }
+
+    void showCurrentTimer()
+    {
          if (currentTimer_ != timer_ns::TIMER_INVALID)
          {
              int timeRemaining = timer_ns::checkTimer(currentTimer_);
@@ -99,13 +178,25 @@ struct TimerApp : public Application
          }
     }
 
+    void loop()
+    {
+        switchToExpiredTimer();
+        keyDispatch();
+        showCurrentTimer();
+        runBuzzer();
+    }
+
     void setup()
     {
         display_ns::display.clearDisplay();
         displayNoTimers();
+        buzzerOn_ = 0;
+        buzzerOff_ = 0;
     }
 
     int currentTimer_;
+    long buzzerOn_;
+    long buzzerOff_;
 };
 
 Application *pApp = new TimerApp();
@@ -123,6 +214,7 @@ void setup() {
   pinMode(SRCLR, OUTPUT);
   pinMode(RCLK, OUTPUT);
   pinMode(AUDIO_CS, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
 
   display_ns::setup();
   timer_ns::setup();

@@ -33,8 +33,8 @@ static const int KS_ROW_4 = 3;
  */
 namespace timer_ns
 {
-    static const int MAX_TIMERS = 15;
-    static const int TIMER_INVALID = 1000000;
+    static const int MAX_TIMERS = 10;
+    static const long TIMER_INVALID = 32767;
     extern int timers[MAX_TIMERS];
 
     // Return the timerno on success, otherwise -1

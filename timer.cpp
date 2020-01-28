@@ -34,9 +34,7 @@ namespace timer_ns
             int t = checkTimer(i);
             if (t != TIMER_INVALID)
             {
-                if (t < 0)
-                    t -=t;
-                if (t < closest)
+                if (t > 0 && t < closest)
                     closest = t;
             }
         }
