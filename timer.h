@@ -34,7 +34,7 @@ static const int KS_ROW_4 = 3;
 namespace timer_ns
 {
     static const int MAX_TIMERS = 10;
-    static const long TIMER_INVALID = 32767;
+    static const int TIMER_INVALID = 32767;
     extern int timers[MAX_TIMERS];
 
     // Return the timerno on success, otherwise -1
@@ -44,9 +44,10 @@ namespace timer_ns
 
     bool isTimerRunning(int timerno);
 
+    // returns the next timer to expire
     int nextTimer();
 
-    // Return  the remianing time. If < 0, it has expired and is 
+    // Return  the remaining time. If < 0, it has expired and is 
     // now counting up.
     // returns TIMER_INVALID if the timer is not valid
     int checkTimer(int timerno);
@@ -98,10 +99,11 @@ namespace keypad_ns
         , KEY_REDIAL = 13
     };
 
-    // Returns a keypresss. Blocks until q key is pressed
+    // Return a keypress. Blocks until a key is pressed
     char getKey();
 
-    // Return a keyy, or 0 if none pressed
+    // Return a key, or 0 if none pressed
+    // Returns immediately, does not block waiting for a keypress
     char getKeyPress();
 
     void setup();

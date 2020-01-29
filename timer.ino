@@ -5,6 +5,56 @@
 #include "timer.h"
 #include "test.h"
 
+struct Buzzer
+{
+    void startBuzzer()
+    {
+        if (buzzerOn_ || buzzerOff_)
+            return; // buzzer is already running
+
+        buzzerOn_ = millis()-1;
+        buzzerOff_ = 0;
+    }
+
+    void endBuzzer()
+    {
+        noTone(BUZZER);
+        buzzerOn_ = 0;
+        buzzerOff_ = 0;
+    }
+
+    void setup()
+    {
+        buzzerOn_ = 0;
+        buzzerOff_ = 0;
+    }
+
+    void loop()
+    {
+        long now = millis();
+        if (buzzerOn_ != 0)
+        {
+            if (now < buzzerOn_)
+                return;  // not yet
+            tone(BUZZER, 1000);
+            buzzerOff_ = now + 1000;
+            buzzerOn_ = 0;
+            return;
+        }
+        if (buzzerOff_ != 0)
+        {
+            if (now < buzzerOff_)
+                return;  // not yet
+            noTone(BUZZER);
+            buzzerOff_ = 0;
+            buzzerOn_ = now + 1000;
+        }
+    }
+
+    long buzzerOn_;
+    long buzzerOff_;
+};
+
 struct TimerApp : public Application
 {
     void displayNoTimers()
@@ -35,7 +85,7 @@ struct TimerApp : public Application
             if (c == '#')
             {
                 if (buf[0] == '\0')
-                    return;
+                    return timer_ns::TIMER_INVALID;
                 break;
             }
             else if (c == 'R')
@@ -72,9 +122,8 @@ struct TimerApp : public Application
          {
              timer_ns::clearTimer(currentTimer_);
              currentTimer_ = timer_ns::nextTimer();
-             buzzerOff_ = 0;
-             buzzerOn_ = 0;
-             noTone(BUZZER);
+             buzzer_.endBuzzer();
+             return;
          }
 
          if (currentTimer_ != timer_ns::TIMER_INVALID)
@@ -88,9 +137,10 @@ struct TimerApp : public Application
          // Create a new timer
          if (c == '#')
          {
-             currentTimer_ = setTimer();
-             //sprintf(printbuf, "created timer: %d", currentTimer_);
-             //Serial.println(printbuf);
+             int t = setTimer();
+             if (t != timer_ns::TIMER_INVALID)
+                currentTimer_ = t;
+             return;
          }
 
          // Switch to a timer
@@ -99,67 +149,30 @@ struct TimerApp : public Application
             int timerno = c - '0';
             if (timer_ns::isTimerRunning(timerno))
             {
-                //sprintf(printbuf, "set current timer: %d", timerno);
-                //Serial.println(printbuf);
                 currentTimer_ = timerno;
             }
+            return;
          }
     }
 
     void switchToExpiredTimer()
     {
-         if (currentTimer_ != timer_ns::TIMER_INVALID && timer_ns::checkTimer(currentTimer_) < 0)
-         {
-             return;  // Current timer is expired
-         }
+         //if (currentTimer_ != timer_ns::TIMER_INVALID && timer_ns::checkTimer(currentTimer_) < 0)
+         //{
+             //return;  // Current timer is expired
+         //}
 
          // Switch current timer if one has expired
          for (int t = 0; t < timer_ns::MAX_TIMERS; t++)
          {
              int timeRemaining = timer_ns::checkTimer(t);
-                 Serial.print("checking timer ");
-                 Serial.print(t);
-                 Serial.print(" is ");
-                 Serial.println(timeRemaining);
-
              if (timeRemaining != timer_ns::TIMER_INVALID && timeRemaining < 0)
              {
-                 Serial.println("switching to expired");
                  currentTimer_ = t;
-                 buzzerOff_ = millis() + 1000;
-                 tone(BUZZER, 1000);
+                 buzzer_.startBuzzer();
+                 return;
              }
          }
-    }
-
-    void runBuzzer()
-    {
-        if (currentTimer_ == timer_ns::TIMER_INVALID)
-            return;
-        if (timer_ns::checkTimer(currentTimer_) < 0)
-        {
-            int now = millis();
-            if (buzzerOn_ == 0 && buzzerOff_ == 0)
-                buzzerOn_= now; // get things started
-            if (buzzerOn_ != 0)
-            {
-                if (now < buzzerOn_)
-                    return;
-                Serial.println("buzzer on");
-                tone(BUZZER, 1000);
-                buzzerOff_ = now + 1000;
-                buzzerOn_ = 0;
-            }
-            if (buzzerOff_ != 0)
-            {
-                if (now < buzzerOff_)
-                    return;
-                Serial.println("buzzer off");
-                noTone(BUZZER);
-                buzzerOff_ = 0;
-                buzzerOn_ = now + 1000;
-            }
-        }
     }
 
     void showCurrentTimer()
@@ -183,20 +196,18 @@ struct TimerApp : public Application
         switchToExpiredTimer();
         keyDispatch();
         showCurrentTimer();
-        runBuzzer();
+        buzzer_.loop();
     }
 
     void setup()
     {
         display_ns::display.clearDisplay();
         displayNoTimers();
-        buzzerOn_ = 0;
-        buzzerOff_ = 0;
+        buzzer_.setup();
     }
 
     int currentTimer_;
-    long buzzerOn_;
-    long buzzerOff_;
+    Buzzer buzzer_;
 };
 
 Application *pApp = new TimerApp();

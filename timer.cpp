@@ -29,22 +29,26 @@ namespace timer_ns
     int nextTimer()
     {
         int closest = TIMER_INVALID;
-        for (int i = 0; i <MAX_TIMERS; i++)
+        int timerno = TIMER_INVALID;
+        for (int i = 0; i < MAX_TIMERS; i++)
         {
             int t = checkTimer(i);
             if (t != TIMER_INVALID)
             {
                 if (t > 0 && t < closest)
+                {
                     closest = t;
+                    timerno = i;
+                }
             }
         }
-        return closest;
+        return timerno;
     }
 
     /**************************************/
     void clearTimer(int timerno)
     {
-      if (timerno < 0 || timerno >MAX_TIMERS)
+      if (timerno < 0 || timerno >= MAX_TIMERS)
           return;
        timers[timerno] = TIMER_INVALID;
     }
@@ -60,7 +64,7 @@ namespace timer_ns
     /**************************************/
     int checkTimer(int timerno)
     {
-      if (timerno < 0 || timerno > MAX_TIMERS)
+      if (timerno < 0 || timerno >= MAX_TIMERS)
           return TIMER_INVALID;
       if (timers[timerno] == TIMER_INVALID)
           return TIMER_INVALID;
