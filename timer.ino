@@ -55,6 +55,118 @@ struct Buzzer
     long buzzerOff_;
 };
 
+#define MAX_DIGITS 5
+#define BUFFER_SIZE 8 // must be power of two
+
+struct TimerBuffer
+{
+    TimerBuffer()
+    {
+        memset(buf, 0, BUFFER_SIZE);
+        pos = 0;
+    }
+
+    void addChar(char c)
+    {
+        buf[(pos+1) & (BUFFER_SIZE-1)] = c;
+        ++pos;
+    }
+
+    char getChar(size_t idx)
+    {
+        size_t s = size();
+        if (idx >= s)
+            return 0;
+        idx = s-(idx+1);
+        return buf[(pos-idx) & (BUFFER_SIZE-1)];
+    }
+
+    size_t size()
+    {
+        if (pos > MAX_DIGITS)
+            return MAX_DIGITS;
+        return pos;
+    }
+
+    int getSeconds()
+    {
+        int secs = 0;
+
+        size_t idx = size()-1;
+        char c = getChar(idx);
+        secs += c - '0';
+
+        c = getChar(--idx);
+        if (c == 0)
+            return secs;
+        secs += (c - '0') * 10;
+
+        c = getChar(--idx);
+        if (c == 0)
+            return secs;
+        secs += (c - '0') * 60;
+
+        c = getChar(--idx);
+        if (c == 0)
+            return secs;
+        secs += (c - '0') * 600;
+
+        c = getChar(--idx);
+        if (c == 0)
+            return secs;
+        secs += (c - '0') * 3600;
+
+        return secs;
+    }
+
+    void format(char *buf, size_t buflen)
+    {
+        size_t startpos = 0;
+        if (pos > MAX_DIGITS)
+            startpos = (pos-MAX_DIGITS) & (BUFFER_SIZE-1);
+        switch (size())
+        {
+        case 5:
+            buf[0] = getChar(0);
+            buf[1] = ':';
+            buf[2] = getChar(1);
+            buf[3] = getChar(2);
+            buf[4] = ':';
+            buf[5] = getChar(3);
+            buf[6] = getChar(4);
+            buf[7] = 0;
+            break;
+        case 4:
+            buf[0] = getChar(0);
+            buf[1] = getChar(1);
+            buf[2] = ':';
+            buf[3] = getChar(2);
+            buf[4] = getChar(3);
+            buf[5] = 0;
+            break;
+        case 3:
+            buf[0] = getChar(0);
+            buf[1] = ':';
+            buf[2] = getChar(1);
+            buf[3] = getChar(2);
+            buf[4] = 0;
+            break;
+        case 2:
+            buf[0] = getChar(0);
+            buf[1] = getChar(1);
+            buf[2] = 0;
+            break;
+        case 1:
+            buf[0] = getChar(0);
+            buf[1] = 0;
+            break;
+        }
+    }
+
+    char buf[BUFFER_SIZE];
+    size_t pos;
+};
+
 struct TimerApp : public Application
 {
     void displayNoTimers()
@@ -72,30 +184,28 @@ struct TimerApp : public Application
 
     int setTimer()
     {
-        char buf[10];
-        memset(buf, 0, sizeof(buf));
+        TimerBuffer tbuf;
         display_ns::display.clearDisplay();
         display_ns::setSmallFont();
         display_ns::display.setCursor(0, display_ns::TEXT_HEIGHT);
         display_ns::display.print("Enter time:");
         display_ns::display.display();
-        for(int idx = 0; idx < 10; ++idx)
+        while(true)
         {
             char c = keypad_ns::getKey();
-            if (c == '#')
+            if (c == '#' || digitalRead(HOOK) == LOW)
             {
-                if (buf[0] == '\0')
+                if (tbuf.size() == 0)
                     return timer_ns::TIMER_INVALID;
                 break;
             }
-            else if (c == 'R')
+            else if (c == 'R')  // cancel
             {
-                memset(buf, 0, sizeof(buf));
-                idx = -1;
+                return timer_ns::TIMER_INVALID;
             }
             else
             {
-                buf[idx] = c;
+                tbuf.addChar(c);
             }
             display_ns::display.clearDisplay();
             display_ns::setSmallFont();
@@ -103,13 +213,19 @@ struct TimerApp : public Application
             display_ns::display.print("Enter time:");
             display_ns::setLargeFont();
             display_ns::display.setCursor(display_ns::TIMER_X, display_ns::TIMER_Y);
-            display_ns::display.print(buf);
+
+            char dbuf[10];
+            tbuf.format(dbuf, sizeof(dbuf));
+            display_ns::display.print(dbuf);
             display_ns::display.display();
         }
-        int secs = atoi(buf);
+        int secs = tbuf.getSeconds();
         return timer_ns::createTimer(secs);
     }
 
+// Redial (R): Cancel the current timer
+// '#' or hook up: Create a timer
+// 0-9: Switch to a running timer
     void keyDispatch()
     {
          char printbuf[64];
@@ -135,7 +251,7 @@ struct TimerApp : public Application
          }
 
          // Create a new timer
-         if (c == '#')
+         if (c == '#' || digitalRead(HOOK) == HIGH)
          {
              int t = setTimer();
              if (t != timer_ns::TIMER_INVALID)
@@ -213,7 +329,8 @@ struct TimerApp : public Application
 Application *pApp = new TimerApp();
 
 
-void setup() {
+void setup() 
+{
   Serial.begin(9600);
 
   pinMode(ROW_1, INPUT);

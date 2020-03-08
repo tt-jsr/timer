@@ -1,7 +1,7 @@
 #include <Adafruit_SSD1306.h>
 #include <splash.h>
 #include <Fonts/FreeSans9pt7b.h>
-#include <Fonts/FreeSans24pt7b.h>
+#include <Fonts/FreeSans18pt7b.h>
 #include "timer.h"
 
 namespace display_ns
@@ -16,7 +16,7 @@ namespace display_ns
     {
       int x, y, w, h;
 
-      display.setFont(&FreeSans24pt7b);
+      display.setFont(&FreeSans18pt7b);
       display.getTextBounds("HELLO", 0, 0, &x, &y, &w, &h);
       TEXT_HEIGHT = h;
     }
@@ -39,7 +39,8 @@ namespace display_ns
       Serial.print(buf);
 #endif
 
-      secs = -secs;
+      int hours = secs/3600;
+      secs = secs - hours*3600;
       int min = secs/60;
       secs = secs - min*60;
 
@@ -62,6 +63,8 @@ namespace display_ns
       snprintf(buf, sizeof(buf), "Timer %d = %d secs remaining\n", timerno, secs);
       Serial.print(buf);
 #endif
+      int hours = secs/3600;
+      secs = secs - hours*3600;
       int min = secs/60;
       secs = secs - min*60;
       setSmallFont();
@@ -69,7 +72,7 @@ namespace display_ns
       snprintf(buf, sizeof(buf), "Timer %d", timerno);
       display.print(buf);
       setLargeFont();
-      snprintf(buf, sizeof(buf), "%02d:%02d", min, secs);
+      snprintf(buf, sizeof(buf), "%d:%02d:%02d", hours, min, secs);
       display.setCursor(TIMER_X, TIMER_Y);
       display.print(buf);
       display.display();
@@ -98,7 +101,7 @@ namespace display_ns
 
       setLargeFont();
       int x, y, w, h;
-      display.getTextBounds("59:00", 0, 0, &x, &y, &w, &h);
+      display.getTextBounds("8:59:00", 0, 0, &x, &y, &w, &h);
       TIMER_Y = 64/2+h/2 + 10;
       TIMER_X = 128/2-w/2 - 5;
 

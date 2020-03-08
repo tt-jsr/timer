@@ -128,8 +128,8 @@ namespace audio_ns
 
 struct Application
 {
-    virtual void loop();
-    virtual void setup();
+    virtual void loop() = 0;
+    virtual void setup() = 0;
 };
 
 #endif TIMER_H_
