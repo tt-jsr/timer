@@ -251,7 +251,7 @@ struct TimerApp : public Application
          }
 
          // Create a new timer
-         if (c == '#' || digitalRead(HOOK) == HIGH)
+         if (c == '#'/* || digitalRead(HOOK) == HIGH*/)
          {
              int t = setTimer();
              if (t != timer_ns::TIMER_INVALID)
