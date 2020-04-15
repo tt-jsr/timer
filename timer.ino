@@ -190,10 +190,20 @@ struct TimerApp : public Application
         display_ns::display.setCursor(0, display_ns::TEXT_HEIGHT);
         display_ns::display.print("Enter time:");
         display_ns::display.display();
+
         while(true)
         {
-            char c = keypad_ns::getKey();
-            if (c == '#' || digitalRead(HOOK) == LOW)
+            char c(0);
+            readSwitchHook();
+            if (!hookUp_ )
+            {
+                c = '#';
+            }
+            else
+            {
+                c = keypad_ns::getKey();
+            }
+            if (c == '#')
             {
                 if (tbuf.size() == 0)
                     return timer_ns::TIMER_INVALID;
@@ -223,13 +233,36 @@ struct TimerApp : public Application
         return timer_ns::createTimer(secs);
     }
 
+    void readSwitchHook()
+    {
+         bool state = digitalRead(HOOK) == LOW;
+         if (hookUp_ != state)
+         {
+            delay(1000);
+            hookUp_ = digitalRead(HOOK) == LOW;
+            Serial.println("hook state: ");
+            Serial.println(hookUp_);
+         }
+    }
+
 // Redial (R): Cancel the current timer
 // '#' or hook up: Create a timer
 // 0-9: Switch to a running timer
     void keyDispatch()
     {
          char printbuf[64];
-         char c = keypad_ns::getKeyPress();
+
+         char c(0);
+
+         readSwitchHook();
+         if (hookUp_)
+         {
+             c = '#';
+         }
+         else
+         {
+            c = keypad_ns::getKeyPress();
+         }
          if (c == 0)
              return;
 
@@ -251,7 +284,7 @@ struct TimerApp : public Application
          }
 
          // Create a new timer
-         if (c == '#'/* || digitalRead(HOOK) == HIGH*/)
+         if (c == '#')
          {
              int t = setTimer();
              if (t != timer_ns::TIMER_INVALID)
@@ -320,10 +353,12 @@ struct TimerApp : public Application
         display_ns::display.clearDisplay();
         displayNoTimers();
         buzzer_.setup();
+        hookUp_ = false;
     }
 
     int currentTimer_;
     Buzzer buzzer_;
+    bool hookUp_;
 };
 
 Application *pApp = new TimerApp();
@@ -343,6 +378,7 @@ void setup()
   pinMode(RCLK, OUTPUT);
   pinMode(AUDIO_CS, OUTPUT);
   pinMode(BUZZER, OUTPUT);
+  pinMode(HOOK, INPUT_PULLUP);
 
   display_ns::setup();
   timer_ns::setup();
