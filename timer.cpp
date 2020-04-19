@@ -62,6 +62,37 @@ namespace timer_ns
     }
 
     /**************************************/
+    bool isTimerExpired(int timerno)
+    {
+        int t = checkTimer(timerno);
+        if (t == TIMER_INVALID)
+            return false;
+        if (t < 0)
+            return true;
+        return false;
+    }
+
+    /**************************************/
+    int getExpiredTimer()
+    {
+        int oldestTime = 0;
+        int oldestTimer = TIMER_INVALID;
+        for (int timer = 0; timer < timer_ns::MAX_TIMERS; timer++)
+        {
+            int t = checkTimer(timer);
+            if (t != TIMER_INVALID)
+            {
+                if (t < oldestTime)
+                {
+                    oldestTime = t;
+                    oldestTimer = timer;
+                }
+            }
+        }
+        return oldestTimer;
+    }
+
+    /**************************************/
     int checkTimer(int timerno)
     {
       if (timerno < 0 || timerno >= MAX_TIMERS)

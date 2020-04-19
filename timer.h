@@ -1,6 +1,8 @@
 #ifndef TIMER_H_
 #define TIMER_H_
 
+#include <Adafruit_SSD1306.h>
+
 // Assign pins
 static const int BUZZER = 2;
 static const int RCLK = 5;
@@ -28,6 +30,23 @@ static const int KS_ROW_2 = 1;
 static const int KS_ROW_3 = 2;
 static const int KS_ROW_4 = 3;
 
+enum Events
+{
+    MSG_NONE
+    , CREATE_NEW_TIMER
+    , CANCEL_TIMER
+    , TIMER_EXPIRED
+    , SWITCH_TO_TIMER
+    , DRAW_TIMER
+    , MSG_KEY
+    , SWITCH_HOOK_UP
+    , SWITCH_HOOK_DOWN
+    , PLAY_MESSAGE
+    , RECORD_MESSAGE
+    , CHECK_FOR_EXPIRED_TIMERS
+};
+
+
 /*********************************************
  * timer functions
  */
@@ -42,10 +61,17 @@ namespace timer_ns
 
     void clearTimer(int timerno);
 
+    // Returns true if the time is not TIMER_INVALID
     bool isTimerRunning(int timerno);
+
+    // Returns true if the timer has expired
+    bool isTimerExpired(int timerno);
 
     // returns the next timer to expire
     int nextTimer();
+
+    // Returns the oldest expired timer
+    int getExpiredTimer();
 
     // Return  the remaining time. If < 0, it has expired and is 
     // now counting up.
@@ -121,16 +147,6 @@ namespace audio_ns
 
     void setup();
 }
-
-/*****************************************
- * Application loop
- */
-
-struct Application
-{
-    virtual void loop() = 0;
-    virtual void setup() = 0;
-};
 
 #endif TIMER_H_
 
