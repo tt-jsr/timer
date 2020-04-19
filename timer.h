@@ -100,6 +100,7 @@ namespace display_ns
     void showTimerExpired(int timerno, int secs);
     void showTimerRunning(int timerno, int secs);
     void showTimer(int timerno);
+    void showNoTimers();
     void setup();
 }
 

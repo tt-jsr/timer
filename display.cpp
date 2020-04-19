@@ -78,6 +78,18 @@ namespace display_ns
       display.display();
     }
 
+    void showNoTimers()
+    {
+        display_ns::setSmallFont();
+        int x, y, w, h;
+        display_ns::display.getTextBounds("No timers", 0, 0, &x, &y, &w, &h);
+        y = 64/2+h/2;
+        x = 128/2-w/2;
+        display_ns::display.setCursor(x, y);
+        display_ns::display.print("No Timers");
+        display_ns::display.display();
+    }
+
     void clearDisplay()
     {
         display.clearDisplay();

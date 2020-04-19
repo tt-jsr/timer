@@ -25,18 +25,6 @@ TimerApp::TimerApp()
     }
 }
 
-void TimerApp::displayNoTimers()
-{
-    display_ns::setSmallFont();
-    int x, y, w, h;
-    display_ns::display.getTextBounds("No timers", 0, 0, &x, &y, &w, &h);
-    y = 64/2+h/2;
-    x = 128/2-w/2;
-    display_ns::display.setCursor(x, y);
-    display_ns::display.print("No Timers");
-    display_ns::display.display();
-}
-
 int TimerApp::createTimer()
 {
     TimerBuffer tbuf;
@@ -46,7 +34,6 @@ int TimerApp::createTimer()
     display_ns::display.print("Enter time:");
     display_ns::display.display();
 
-    Serial.println("enter createTimer");
     while(true)
     {
         bool starttimer(false);
@@ -87,26 +74,11 @@ int TimerApp::createTimer()
         display_ns::display.print(dbuf);
         display_ns::display.display();
     }
-    Serial.println("exit createTimer");
-}
-
-bool TimerApp::readSwitchHook(bool hookUp)
-{
-     bool state = digitalRead(HOOK) == LOW;
-     if (hookUp != state)
-     {
-        delay(1000);
-        bool r = digitalRead(HOOK) == LOW;
-        Serial.println("hook state: ");
-        Serial.println(hookUp_);
-        return r;
-     }
-     return hookUp;
 }
 
 void TimerApp::message_proc(int msg, int arg)
 {
-    //printMessage("message_proc", msg, arg);
+    printMessage("message_proc", msg, arg);
     switch (msg)
     {
     case CREATE_NEW_TIMER:
@@ -127,10 +99,9 @@ void TimerApp::message_proc(int msg, int arg)
         break;
     case SWITCH_TO_TIMER:
         {
-            int timerno = arg - '0';
-            if (timer_ns::isTimerRunning(timerno))
+            if (timer_ns::isTimerRunning(arg))
             {
-                SET_CURRENT_TIMER(timerno);
+                SET_CURRENT_TIMER(arg);
             }
         }
         break;
@@ -145,7 +116,6 @@ void TimerApp::message_proc(int msg, int arg)
 
         if (GET_CURRENT_TIMER() != timer_ns::TIMER_INVALID)
         {
-            Serial.println("Timer not invalid");
             int timeRemaining = timer_ns::checkTimer(arg);
             if (timeRemaining < 0)
                 display_ns::showTimerExpired(arg, timeRemaining);
@@ -154,7 +124,7 @@ void TimerApp::message_proc(int msg, int arg)
         }
         else
         {
-            displayNoTimers();
+            display_ns::showNoTimers();
         }
         break;
     case SWITCH_HOOK_UP:
@@ -174,8 +144,7 @@ void TimerApp::message_proc(int msg, int arg)
     case MSG_KEY:
         if (arg == 'R')
         {
-            if (timer_ns::isTimerExpired(GET_CURRENT_TIMER()))
-                post_message(CANCEL_TIMER, GET_CURRENT_TIMER());
+            post_message(CANCEL_TIMER, GET_CURRENT_TIMER());
         }
         if (arg == '#')
         {
@@ -185,7 +154,7 @@ void TimerApp::message_proc(int msg, int arg)
                 post_message(CREATE_NEW_TIMER, 0);
         }
         if (arg >= '0' && arg <= '9')
-            post_message(SWITCH_TO_TIMER, arg);
+            post_message(SWITCH_TO_TIMER, arg - '0');
         break;
     case PLAY_MESSAGE:
         break;
@@ -207,6 +176,69 @@ void TimerApp::message_proc(int msg, int arg)
         Serial.print(" arg: ");
         Serial.print(arg);
     }
+}
+
+void TimerApp::printMessage(char *text, int msg, int arg)
+{
+    char buf[128];
+    switch (msg)
+    {
+    case MSG_NONE:
+        sprintf(buf, "%s: msg: NONE, arg: %d", text, arg);
+        break;
+    case CREATE_NEW_TIMER:
+        sprintf(buf, "%s: msg: CREATE_TIMER, arg: %d", text, arg);
+        break;
+    case CANCEL_TIMER:
+        sprintf(buf, "%s: msg: CANCEL_TIMER, arg: %d", text, arg);
+        break;
+    case TIMER_EXPIRED:
+        sprintf(buf, "%s: msg: TIMER_EXPIRED, arg: %d", text, arg);
+        break;
+    case SWITCH_TO_TIMER:
+        sprintf(buf, "%s: msg: SWITCH_TO_TIMER, arg: %d", text, arg);
+        break;
+    case MSG_KEY:
+        sprintf(buf, "%s: msg: MSG_KEY, arg: %c", text, (char)arg);
+        break;
+    case SWITCH_HOOK_UP:
+        sprintf(buf, "%s: msg: SWITCH_HOOK_UP, arg: %d", text, arg);
+        break;
+    case SWITCH_HOOK_DOWN:
+        sprintf(buf, "%s: msg: SWITCH_HOOK_DOWN, arg: %d", text, arg);
+        break;
+    case PLAY_MESSAGE:
+        sprintf(buf, "%s: msg: PLAY_MESSAGE, arg: %d", text, arg);
+        break;
+    case RECORD_MESSAGE:
+        sprintf(buf, "%s: msg: RECORD_MESSAGE, arg: %d", text, arg);
+        break;
+    case DRAW_TIMER:
+        return;
+        sprintf(buf, "%s: msg: DRAW_TIMER, arg: %d", text, arg);
+        break;
+    case CHECK_FOR_EXPIRED_TIMERS:
+        return;
+        sprintf(buf, "%s: msg: CHECK_FOR_EXPIRED_TIMERS, arg: %d", text, arg);
+        break;
+    default:
+        sprintf(buf, "%s: msg: %d, arg: %d", text, msg, arg);
+    }
+    Serial.println(buf);
+}
+
+bool TimerApp::readSwitchHook(bool hookUp)
+{
+     bool state = digitalRead(HOOK) == LOW;
+     if (hookUp != state)
+     {
+        delay(1000);
+        bool r = digitalRead(HOOK) == LOW;
+        //Serial.println("hook state: ");
+        //Serial.println(hookUp_);
+        return r;
+     }
+     return hookUp;
 }
 
 // Read from the hardware, keypress or switch hook
@@ -242,55 +274,6 @@ bool TimerApp::read_input(int& msg, int& arg)
      return false;
 }
 
-void TimerApp::printMessage(char *text, int msg, int arg)
-{
-    char buf[128];
-    switch (msg)
-    {
-    case MSG_NONE:
-        sprintf(buf, "%s: msg: NONE, arg: %d", text, arg);
-        break;
-    case CREATE_NEW_TIMER:
-        sprintf(buf, "%s: msg: CREATE_TIMER, arg: %d", text, arg);
-        break;
-    case CANCEL_TIMER:
-        sprintf(buf, "%s: msg: CANCEL_TIMER, arg: %d", text, arg);
-        break;
-    case TIMER_EXPIRED:
-        sprintf(buf, "%s: msg: TIMER_EXPIRED, arg: %d", text, arg);
-        break;
-    case SWITCH_TO_TIMER:
-        sprintf(buf, "%s: msg: SWITCH_TO_TIMER, arg: %d", text, arg);
-        break;
-    case DRAW_TIMER:
-        return;
-        sprintf(buf, "%s: msg: DRAW_TIMER, arg: %d", text, arg);
-        break;
-    case MSG_KEY:
-        sprintf(buf, "%s: msg: MSG_KEY, arg: %c", text, (char)arg);
-        break;
-    case SWITCH_HOOK_UP:
-        sprintf(buf, "%s: msg: SWITCH_HOOK_UP, arg: %d", text, arg);
-        break;
-    case SWITCH_HOOK_DOWN:
-        sprintf(buf, "%s: msg: SWITCH_HOOK_DOWN, arg: %d", text, arg);
-        break;
-    case PLAY_MESSAGE:
-        sprintf(buf, "%s: msg: PLAY_MESSAGE, arg: %d", text, arg);
-        break;
-    case RECORD_MESSAGE:
-        sprintf(buf, "%s: msg: RECORD_MESSAGE, arg: %d", text, arg);
-        break;
-    case CHECK_FOR_EXPIRED_TIMERS:
-        return;
-        sprintf(buf, "%s: msg: CHECK_FOR_EXPIRED_TIMERS, arg: %d", text, arg);
-        break;
-    default:
-        sprintf(buf, "%s: msg: %d, arg: %d", text, msg, arg);
-    }
-    Serial.println(buf);
-}
-
 void TimerApp::loop()
 {
     int msg, arg;
@@ -305,8 +288,11 @@ void TimerApp::loop()
     }
     if (producer_== consumer_)
     {
-        post_message(DRAW_TIMER, GET_CURRENT_TIMER());
-        post_message(CHECK_FOR_EXPIRED_TIMERS, 0);
+        if (drawTimer_.check())
+        {
+            post_message(DRAW_TIMER, GET_CURRENT_TIMER());
+            post_message(CHECK_FOR_EXPIRED_TIMERS, 0);
+        }
     }
     buzzer_.loop();
 }
@@ -317,8 +303,6 @@ void TimerApp::post_message(int msg, int arg)
     msg_queue_[producer_].msg_type = msg;
     msg_queue_[producer_].arg = arg;
     producer_ = (++producer_) & (MAX_MESSAGES-1);
-    //Serial.print("producer: ");
-    //Serial.println(producer_);
 }
 
 bool TimerApp::get_message(int& msg, int& arg)
@@ -333,8 +317,6 @@ bool TimerApp::get_message(int& msg, int& arg)
     msg = msg_queue_[consumer_].msg_type;
     arg = msg_queue_[consumer_].arg;
     //printMessage("get_message", msg, arg);
-    //Serial.print("consumer: ");
-    //Serial.println(consumer_);
     consumer_ = (++consumer_) & (MAX_MESSAGES-1);
     return true;
 }
@@ -342,7 +324,8 @@ bool TimerApp::get_message(int& msg, int& arg)
 void TimerApp::setup()
 {
     display_ns::display.clearDisplay();
-    displayNoTimers();
+    display_ns::showNoTimers();
+    drawTimer_.set(500);
     buzzer_.setup();
     hookUp_ = false;
 }

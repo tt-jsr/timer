@@ -3,6 +3,7 @@
 
 #include "application.h"
 #include "buzzer.h"
+#include "interval_timer.h"
 
 struct Message
 {
@@ -15,7 +16,6 @@ struct Message
 struct TimerApp : public Application
 {
     TimerApp();
-    void displayNoTimers();
     int createTimer();
     bool readSwitchHook(bool hookUp);
     void message_proc(int msg, int arg);
@@ -27,12 +27,14 @@ struct TimerApp : public Application
     void setup();
 
     void printMessage(char *text, int msg, int arg);
+    IntervalTimer drawTimer_;
     int currentTimer_;
     Buzzer buzzer_;
     bool hookUp_;
     Message msg_queue_[MAX_MESSAGES];
     int consumer_;
     int producer_;
+
 };
 
 #endif
