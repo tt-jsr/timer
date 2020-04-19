@@ -57,9 +57,9 @@ int TimerApp::createTimer()
         }
         if (starttimer)
         {
-            if (tbuf.size() == 0)
-                return timer_ns::TIMER_INVALID;
             int secs = tbuf.getSeconds();
+            if (secs == 0)
+                return timer_ns::TIMER_INVALID;
             return timer_ns::createTimer(secs);
         }
         display_ns::display.clearDisplay();
@@ -288,6 +288,8 @@ void TimerApp::loop()
     }
     if (producer_== consumer_)
     {
+        // If the queue is empty and it is time, we will
+        // draw the current timer and check for expired timers
         if (drawTimer_.check())
         {
             post_message(DRAW_TIMER, GET_CURRENT_TIMER());

@@ -39,6 +39,7 @@ namespace display_ns
       Serial.print(buf);
 #endif
 
+      secs = -secs;
       int hours = secs/3600;
       secs = secs - hours*3600;
       int min = secs/60;
@@ -49,7 +50,7 @@ namespace display_ns
       snprintf(buf, sizeof(buf), "Timer %d Expired", timerno);
       display.print(buf);
       setLargeFont();
-      snprintf(buf, sizeof(buf), "%02d:%02d", min, secs);
+      snprintf(buf, sizeof(buf), "%d:%02d", min, secs);
       display.setCursor(TIMER_X, TIMER_Y);
       display.print(buf);
       display.display();
@@ -72,7 +73,10 @@ namespace display_ns
       snprintf(buf, sizeof(buf), "Timer %d", timerno);
       display.print(buf);
       setLargeFont();
-      snprintf(buf, sizeof(buf), "%d:%02d:%02d", hours, min, secs);
+      if(hours)
+        snprintf(buf, sizeof(buf), "%d:%02d:%02d", hours, min, secs);
+      else
+        snprintf(buf, sizeof(buf), "%d:%02d", min, secs);
       display.setCursor(TIMER_X, TIMER_Y);
       display.print(buf);
       display.display();
