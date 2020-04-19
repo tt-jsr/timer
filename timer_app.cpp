@@ -15,6 +15,7 @@
 TimerApp::TimerApp()
 :currentTimer_(timer_ns::TIMER_INVALID)
 ,hookUp_(false)
+,recording_(0)
 ,consumer_(0)
 ,producer_(0)
 {
@@ -25,7 +26,7 @@ TimerApp::TimerApp()
     }
 }
 
-int TimerApp::createTimer()
+int TimerApp::inputTime()
 {
     TimerBuffer tbuf;
     display_ns::display.clearDisplay();
@@ -36,7 +37,6 @@ int TimerApp::createTimer()
 
     while(true)
     {
-        bool starttimer(false);
         int msg, arg;
         if (read_input(msg, arg))
         {
@@ -44,23 +44,15 @@ int TimerApp::createTimer()
             {
             case MSG_KEY:
                 if (arg == '#')
-                    starttimer = true;
+                    return tbuf.getSeconds();
                 else if (arg == 'R')
-                    return timer_ns::TIMER_INVALID;
+                    return 0;
                 else
                     tbuf.addChar(arg);
                 break;
             case SWITCH_HOOK_DOWN:
-                starttimer = true;
-                break;
+                return tbuf.getSeconds();
             }
-        }
-        if (starttimer)
-        {
-            int secs = tbuf.getSeconds();
-            if (secs == 0)
-                return timer_ns::TIMER_INVALID;
-            return timer_ns::createTimer(secs);
         }
         display_ns::display.clearDisplay();
         display_ns::setSmallFont();
@@ -78,14 +70,24 @@ int TimerApp::createTimer()
 
 void TimerApp::message_proc(int msg, int arg)
 {
-    printMessage("message_proc", msg, arg);
+    //printMessage("message_proc", msg, arg);
     switch (msg)
     {
     case CREATE_NEW_TIMER:
         {
-            int t = createTimer();
-            if (t != timer_ns::TIMER_INVALID)
-                SET_CURRENT_TIMER(t);
+            int secs = inputTime();
+            if (secs == 0)
+                return;
+            if (hookUp_)
+                post_message(START_RECORDING, secs);
+            else
+            {
+                int timerno = timer_ns::createTimer(secs);
+                if (timerno != timer_ns::TIMER_INVALID)
+                {
+                    SET_CURRENT_TIMER(timerno);
+                }
+            }
         }
         break;
     case CANCEL_TIMER:
@@ -106,6 +108,8 @@ void TimerApp::message_proc(int msg, int arg)
         }
         break;
     case DRAW_TIMER:
+        if (recording_) 
+            return;
         // If our current timer is invalid, get the oldest expired timer
         if (GET_CURRENT_TIMER() == timer_ns::TIMER_INVALID)
             SET_CURRENT_TIMER(timer_ns::getExpiredTimer());
@@ -136,10 +140,11 @@ void TimerApp::message_proc(int msg, int arg)
         else
         {
             post_message(CREATE_NEW_TIMER, GET_CURRENT_TIMER());
-            post_message(RECORD_MESSAGE, GET_CURRENT_TIMER());
         }
         break;
     case SWITCH_HOOK_DOWN:
+        if (recording_)
+            post_message(STOP_RECORDING, 0);
         break;
     case MSG_KEY:
         if (arg == 'R')
@@ -158,7 +163,25 @@ void TimerApp::message_proc(int msg, int arg)
         break;
     case PLAY_MESSAGE:
         break;
-    case RECORD_MESSAGE:
+    case START_RECORDING:
+        {
+            recording_ = arg;  // arg is the number of seconds for the timer
+            display_ns::display.clearDisplay();
+            display_ns::setSmallFont();
+            display_ns::display.setCursor(0, display_ns::TEXT_HEIGHT);
+            display_ns::display.print("Recording\nmessage...");
+            display_ns::display.display();
+        }
+        break;
+    case STOP_RECORDING:
+        {
+            int timerno = timer_ns::createTimer(recording_);
+            if (timerno != timer_ns::TIMER_INVALID)
+            {
+                SET_CURRENT_TIMER(timerno);
+            }
+            recording_ = 0;
+        }
         break;
     case CHECK_FOR_EXPIRED_TIMERS:
         {
@@ -210,8 +233,8 @@ void TimerApp::printMessage(char *text, int msg, int arg)
     case PLAY_MESSAGE:
         sprintf(buf, "%s: msg: PLAY_MESSAGE, arg: %d", text, arg);
         break;
-    case RECORD_MESSAGE:
-        sprintf(buf, "%s: msg: RECORD_MESSAGE, arg: %d", text, arg);
+    case START_RECORDING:
+        sprintf(buf, "%s: msg: START_RECORDING, arg: %d", text, arg);
         break;
     case DRAW_TIMER:
         return;

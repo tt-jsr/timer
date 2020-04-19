@@ -16,7 +16,7 @@ struct Message
 struct TimerApp : public Application
 {
     TimerApp();
-    int createTimer();
+    int inputTime();
     bool readSwitchHook(bool hookUp);
     void message_proc(int msg, int arg);
     int getExpiredTimer();
@@ -31,6 +31,7 @@ struct TimerApp : public Application
     int currentTimer_;
     Buzzer buzzer_;
     bool hookUp_;
+    int recording_;
     Message msg_queue_[MAX_MESSAGES];
     int consumer_;
     int producer_;
