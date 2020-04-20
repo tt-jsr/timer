@@ -16,9 +16,6 @@ namespace timer_ns
             if (timers[i] == TIMER_INVALID)
             {
                 timers[i] = millis()/1000 + timeout;
-                //char buf[32];
-                //sprintf(buf, "Timer %d = %d secs\n", i, timeout);
-                //Serial.print(buf);
                 return i;
             }
         }

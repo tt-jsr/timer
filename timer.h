@@ -32,8 +32,7 @@ static const int KS_ROW_4 = 3;
 
 enum Events
 {
-    MSG_NONE
-    , CREATE_NEW_TIMER
+    CREATE_NEW_TIMER
     , CANCEL_TIMER
     , TIMER_EXPIRED
     , SWITCH_TO_TIMER
@@ -60,6 +59,7 @@ namespace timer_ns
     // Return the timerno on success, otherwise -1
     int createTimer(int timeout);
 
+    // Cancel a timer
     void clearTimer(int timerno);
 
     // Returns true if the time is not TIMER_INVALID
@@ -78,6 +78,7 @@ namespace timer_ns
     // now counting up.
     // returns TIMER_INVALID if the timer is not valid
     int checkTimer(int timerno);
+
     void setup();
 }
 
@@ -95,13 +96,33 @@ namespace display_ns
     extern int TIMER_X;
     extern int TIMER_Y;
 
+    static const int FLAG_CLEAR = 0x01;         // Clear the display
+    static const int FLAG_SMALL_FONT = 0x02;    // Use small font
+    static const int FLAG_LARGE_FONT = 0x04;    // use large font
+    static const int FLAG_DISPLAY = 0x08;       // Write to screen
+    static const int FLAG_LINES = 0x10;         // y-coordinate is in lines
+
+    // Write a message to the screen
+    void print(int flags, int x, int y, char *text);
+
+    // Clesar the display
     void clearDisplay();
+
+    // Set the current font to small
     void setSmallFont();
+
+    // Set the current font to large
     void setLargeFont();
+
+    // Display an expired timer
     void showTimerExpired(int timerno, int secs);
+
+    // Display a running timer
     void showTimerRunning(int timerno, int secs);
-    void showTimer(int timerno);
+
+    // Display that there are no timers running
     void showNoTimers();
+
     void setup();
 }
 

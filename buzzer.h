@@ -2,6 +2,7 @@
 #define BUZZER_H_
 
 #include "timer.h"
+#include "interval_timer.h"
 
 struct Buzzer
 {
@@ -10,8 +11,9 @@ struct Buzzer
     void setup();
     void loop();
 
-    long buzzerOn_;
-    long buzzerOff_;
+    bool running_;
+    bool buzzerOn_;
+    IntervalTimer intervalTimer_;
 };
 
 #endif

@@ -16,24 +16,17 @@ TimerApp::TimerApp()
 :currentTimer_(timer_ns::TIMER_INVALID)
 ,hookUp_(false)
 ,recording_(0)
-,consumer_(0)
-,producer_(0)
 {
-    for (int i = 0; i < MAX_MESSAGES;++i)
-    {
-        msg_queue_[i].msg_type = MSG_NONE;
-        msg_queue_[i].arg=0;
-    }
 }
 
 int TimerApp::inputTime()
 {
     TimerBuffer tbuf;
-    display_ns::display.clearDisplay();
-    display_ns::setSmallFont();
-    display_ns::display.setCursor(0, display_ns::TEXT_HEIGHT);
-    display_ns::display.print("Enter time:");
-    display_ns::display.display();
+
+    display_ns::print(
+            display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_DISPLAY | display_ns::FLAG_LINES, 
+            0, 0, 
+            "Enter time:");
 
     while(true)
     {
@@ -54,21 +47,24 @@ int TimerApp::inputTime()
                 return tbuf.getSeconds();
             }
         }
-        display_ns::display.clearDisplay();
-        display_ns::setSmallFont();
-        display_ns::display.setCursor(0, display_ns::TEXT_HEIGHT);
-        display_ns::display.print("Enter time:");
-        display_ns::setLargeFont();
-        display_ns::display.setCursor(display_ns::TIMER_X, display_ns::TIMER_Y);
+        display_ns::print(
+            display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_LINES
+            , 0, 0
+            , "Enter time:");
+
 
         char dbuf[10];
         tbuf.format(dbuf, sizeof(dbuf));
-        display_ns::display.print(dbuf);
-        display_ns::display.display();
+
+        display_ns::print(
+            display_ns::FLAG_LARGE_FONT | display_ns::FLAG_DISPLAY
+            , display_ns::TIMER_X, display_ns::TIMER_Y 
+            , dbuf);
+
     }
 }
 
-void TimerApp::message_proc(int msg, int arg)
+int TimerApp::message_proc(int msg, int arg)
 {
     //printMessage("message_proc", msg, arg);
     switch (msg)
@@ -77,9 +73,9 @@ void TimerApp::message_proc(int msg, int arg)
         {
             int secs = inputTime();
             if (secs == 0)
-                return;
+                return 0;
             if (hookUp_)
-                post_message(START_RECORDING, secs);
+                messageQueue_.post_message(START_RECORDING, secs);
             else
             {
                 int timerno = timer_ns::createTimer(secs);
@@ -134,43 +130,43 @@ void TimerApp::message_proc(int msg, int arg)
     case SWITCH_HOOK_UP:
         if (timer_ns::isTimerExpired(GET_CURRENT_TIMER()))
         {
-            post_message(CANCEL_TIMER, GET_CURRENT_TIMER());
-            post_message(PLAY_MESSAGE, GET_CURRENT_TIMER());
+            messageQueue_.post_message(CANCEL_TIMER, GET_CURRENT_TIMER());
+            messageQueue_.post_message(PLAY_MESSAGE, GET_CURRENT_TIMER());
         }
         else
         {
-            post_message(CREATE_NEW_TIMER, GET_CURRENT_TIMER());
+            messageQueue_.post_message(CREATE_NEW_TIMER, GET_CURRENT_TIMER());
         }
         break;
     case SWITCH_HOOK_DOWN:
         if (recording_)
-            post_message(STOP_RECORDING, 0);
+            messageQueue_.post_message(STOP_RECORDING, 0);
         break;
     case MSG_KEY:
         if (arg == 'R')
         {
-            post_message(CANCEL_TIMER, GET_CURRENT_TIMER());
+            messageQueue_.post_message(CANCEL_TIMER, GET_CURRENT_TIMER());
         }
         if (arg == '#')
         {
             if (timer_ns::isTimerExpired(GET_CURRENT_TIMER()))
-                post_message(CANCEL_TIMER, GET_CURRENT_TIMER()/*, 0*/);
+                messageQueue_.post_message(CANCEL_TIMER, GET_CURRENT_TIMER()/*, 0*/);
             else
-                post_message(CREATE_NEW_TIMER, 0);
+                messageQueue_.post_message(CREATE_NEW_TIMER, 0);
         }
         if (arg >= '0' && arg <= '9')
-            post_message(SWITCH_TO_TIMER, arg - '0');
+            messageQueue_.post_message(SWITCH_TO_TIMER, arg - '0');
         break;
     case PLAY_MESSAGE:
         break;
     case START_RECORDING:
         {
             recording_ = arg;  // arg is the number of seconds for the timer
-            display_ns::display.clearDisplay();
-            display_ns::setSmallFont();
-            display_ns::display.setCursor(0, display_ns::TEXT_HEIGHT);
-            display_ns::display.print("Recording\nmessage...");
-            display_ns::display.display();
+                               // STOP_RECORDING will then set the timer
+            display_ns::print(
+                display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_DISPLAY | display_ns::FLAG_LINES
+                , 0, 0
+                , "Recording\nmessage...");
         }
         break;
     case STOP_RECORDING:
@@ -188,9 +184,20 @@ void TimerApp::message_proc(int msg, int arg)
             int t = timer_ns::getExpiredTimer();
             if (t != timer_ns::TIMER_INVALID)
             {
-                post_message(SWITCH_TO_TIMER, t);
-                post_message(TIMER_EXPIRED, t);
+                messageQueue_.post_message(SWITCH_TO_TIMER, t);
+                messageQueue_.post_message(TIMER_EXPIRED, t);
             }
+        }
+        break;
+    case TIMER_EVENT:
+        break;
+    case IDLE_EVENT:
+        // If the queue is empty and it is time, we will
+        // draw the current timer and check for expired timers
+        if (drawTimer_.check())
+        {
+            messageQueue_.post_message(DRAW_TIMER, GET_CURRENT_TIMER());
+            messageQueue_.post_message(CHECK_FOR_EXPIRED_TIMERS, 0);
         }
         break;
     default:
@@ -199,6 +206,7 @@ void TimerApp::message_proc(int msg, int arg)
         Serial.print(" arg: ");
         Serial.print(arg);
     }
+    return 0;
 }
 
 void TimerApp::printMessage(char *text, int msg, int arg)
@@ -206,8 +214,8 @@ void TimerApp::printMessage(char *text, int msg, int arg)
     char buf[128];
     switch (msg)
     {
-    case MSG_NONE:
-        sprintf(buf, "%s: msg: NONE, arg: %d", text, arg);
+    case NULL_EVENT:
+        sprintf(buf, "%s: msg: NULL_EVENT, arg: %d", text, arg);
         break;
     case CREATE_NEW_TIMER:
         sprintf(buf, "%s: msg: CREATE_TIMER, arg: %d", text, arg);
@@ -257,8 +265,6 @@ bool TimerApp::readSwitchHook(bool hookUp)
      {
         delay(1000);
         bool r = digitalRead(HOOK) == LOW;
-        //Serial.println("hook state: ");
-        //Serial.println(hookUp_);
         return r;
      }
      return hookUp;
@@ -292,7 +298,7 @@ bool TimerApp::read_input(int& msg, int& arg)
          arg = c;
          return true;
      }
-     msg = MSG_NONE;
+     msg = NULL_EVENT;
      arg = 0;
      return false;
 }
@@ -300,54 +306,29 @@ bool TimerApp::read_input(int& msg, int& arg)
 void TimerApp::loop()
 {
     int msg, arg;
-    if (get_message(msg, arg))
-    {
-        message_proc(msg, arg);
-    }
+
+    // Pump a message into our message_proc 
+    messageQueue_.pump_message();
+
+    // Do we have any input to deal with?
     if (read_input(msg, arg))
     {
         //printMessage("read_input", msg, arg);
-        post_message(msg, arg);
-    }
-    if (producer_== consumer_)
-    {
-        // If the queue is empty and it is time, we will
-        // draw the current timer and check for expired timers
-        if (drawTimer_.check())
-        {
-            post_message(DRAW_TIMER, GET_CURRENT_TIMER());
-            post_message(CHECK_FOR_EXPIRED_TIMERS, 0);
-        }
+        messageQueue_.post_message(msg, arg);
     }
     buzzer_.loop();
 }
 
-void TimerApp::post_message(int msg, int arg)
-{
-    //printMessage("post_message", msg, arg);
-    msg_queue_[producer_].msg_type = msg;
-    msg_queue_[producer_].arg = arg;
-    producer_ = (++producer_) & (MAX_MESSAGES-1);
-}
+extern Application *pApp;
 
-bool TimerApp::get_message(int& msg, int& arg)
+int message_proc(int msg, int arg)
 {
-    if (producer_ == consumer_)
-    {
-        msg_queue_[consumer_].msg_type = MSG_NONE;
-        msg_queue_[consumer_].arg = 0;
-        return false;
-    }
-
-    msg = msg_queue_[consumer_].msg_type;
-    arg = msg_queue_[consumer_].arg;
-    //printMessage("get_message", msg, arg);
-    consumer_ = (++consumer_) & (MAX_MESSAGES-1);
-    return true;
+    return ((TimerApp *)pApp)->message_proc(msg, arg);
 }
 
 void TimerApp::setup()
 {
+    messageQueue_.register_proc(::message_proc);
     display_ns::display.clearDisplay();
     display_ns::showNoTimers();
     drawTimer_.set(500);

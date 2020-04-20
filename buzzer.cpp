@@ -2,45 +2,39 @@
 
 void Buzzer::startBuzzer()
 {
-    if (buzzerOn_ || buzzerOff_)
+    if (running_)
         return; // buzzer is already running
 
-    buzzerOn_ = millis()-1;
-    buzzerOff_ = 0;
+    running_ = true;
+    intervalTimer_.set(500);
+    buzzerOn_ = false;
 }
 
 void Buzzer::endBuzzer()
 {
     noTone(BUZZER);
-    buzzerOn_ = 0;
-    buzzerOff_ = 0;
+    running_ = false;
+    buzzerOn_ = false;
 }
 
 void Buzzer::setup()
 {
-    buzzerOn_ = 0;
-    buzzerOff_ = 0;
+    running_ = false;
+    buzzerOn_ = false;
 }
 
 void Buzzer::loop()
 {
-    long now = millis();
-    if (buzzerOn_ != 0)
-    {
-        if (now < buzzerOn_)
-            return;  // not yet
-        tone(BUZZER, 1000);
-        buzzerOff_ = now + 1000;
-        buzzerOn_ = 0;
+    if (running_ == false)
         return;
-    }
-    if (buzzerOff_ != 0)
+
+    if (intervalTimer_.check())
     {
-        if (now < buzzerOff_)
-            return;  // not yet
-        noTone(BUZZER);
-        buzzerOff_ = 0;
-        buzzerOn_ = now + 1000;
+        if (buzzerOn_)
+            noTone(BUZZER);
+        else
+            tone(BUZZER, 1000);
+        buzzerOn_ = !buzzerOn_;
     }
 }
 

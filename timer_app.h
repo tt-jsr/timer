@@ -4,21 +4,14 @@
 #include "application.h"
 #include "buzzer.h"
 #include "interval_timer.h"
-
-struct Message
-{
-    int msg_type;
-    int arg;
-};
-
-#define MAX_MESSAGES 16 // power of two
+#include "message_queue.h"
 
 struct TimerApp : public Application
 {
     TimerApp();
     int inputTime();
     bool readSwitchHook(bool hookUp);
-    void message_proc(int msg, int arg);
+    int message_proc(int msg, int arg);
     int getExpiredTimer();
     bool read_input(int& msg, int& arg);
     bool get_message(int& msg, int& arg);
@@ -32,10 +25,7 @@ struct TimerApp : public Application
     Buzzer buzzer_;
     bool hookUp_;
     int recording_;
-    Message msg_queue_[MAX_MESSAGES];
-    int consumer_;
-    int producer_;
-
+    MessageQueue messageQueue_;
 };
 
 #endif
