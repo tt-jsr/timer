@@ -55,7 +55,8 @@ public:
 
     // Create a timer. TIMER_EVENT will be posted to the callback
     // with the id as an argument when the timer fires
-    void create_timer(int id, unsigned long interval_ms, bool repeat);
+    // Returns true if the timer is created
+    bool create_timer(int id, unsigned long interval_ms, bool repeat);
 
     // Cancel a timer given the id
     void cancel_timer(int id);

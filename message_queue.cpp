@@ -85,7 +85,7 @@ bool MessageQueue::peek_message(int& msg, int& arg)
     return true;
 }
 
-void MessageQueue::create_timer(int id, unsigned long interval, bool repeat)
+bool MessageQueue::create_timer(int id, unsigned long interval, bool repeat)
 {
     for (int n = 0; n < MAX_TIMERS; ++n)
     {
@@ -95,8 +95,10 @@ void MessageQueue::create_timer(int id, unsigned long interval, bool repeat)
             timers_[n].id = id;
             timers_[n].repeat = repeat;
             timers_[n].nextTrigger = millis() + interval;
+            return true;
         }
     }
+    return false;
 }
 
 void MessageQueue::cancel_timer(int id)
@@ -109,6 +111,7 @@ void MessageQueue::cancel_timer(int id)
             timers_[n].id = 0;
             timers_[n].repeat = false;
             timers_[n].nextTrigger = 0;
+            return;
         }
     }
 }
@@ -121,12 +124,18 @@ void MessageQueue::check_timers()
         Timer& timer = timers_[n];
         if (timer.id)
         {
-            if ((timer.interval + timer.nextTrigger) < now)
+            if (timer.nextTrigger < now)
             {
+                //Serial.print("now: ");
+                //Serial.print(now);
+                //Serial.print(" nextTrigger: ");
+                //Serial.println(timer.nextTrigger);
                 (*cb_)(TIMER_EVENT, timer.id);
                 if (timer.repeat)
                 {
                     timer.nextTrigger = now + timer.interval;
+                    //Serial.print("nextTrigger: ");
+                    //Serial.println(timer.nextTrigger);
                 }
                 else
                 {
