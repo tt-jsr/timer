@@ -21,7 +21,6 @@ struct Timer
 
 struct Pin
 {
-    bool digitalRead;
     bool enabled;
     bool currentState;  // for digital read only
     unsigned long  debounceTime;   // for digital read only
@@ -77,8 +76,9 @@ public:
 
     // Generate DIGITAL_READ_EVENT messages when this given pin
     // changes state
+    // def: LOW or HIGH
     // debounce: Use a delay to debounce the reading
-    bool digitalRead(int pin, unsigned long debounceTimeMicros);
+    bool digitalRead(int pin, int def, unsigned long debounceTimeMicros);
 private:
     void check_timers();
     void check_pins();

@@ -24,17 +24,19 @@ struct TimerApp : public Application
     int OnStopRecording(int arg);
     int OnCheckForExpiredTimers(int arg);
     int OnTimerEvent(int arg);
+    int OnDigitalRead(int arg);
     int OnIdleEvent();
     int OnUnknown(int msg, int arg);
 
 
     // Read hardware inputs
-    bool readSwitchHook(bool hookUp);
-    bool read_input(int& msg, int& arg);
+    int readSwitchHook();
+    bool readSwitchHookImpl(bool hookUp);
+    bool read_keypad(char& c);
 
-    // push back one character to be returned by read_input()
+    // push back one character to be returned by read_keypad()
     // as a EVENT_MSG_KEY
-    void read_input_ungetc(char c);
+    void read_keypad_ungetc(char c);
 
     // Debug helper
     void printMessage(char *text, int msg, int arg);

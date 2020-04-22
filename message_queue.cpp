@@ -19,6 +19,14 @@ MessageQueue::MessageQueue()
         timers_[i].nextTrigger = 0;
         timers_[i].id = 0;
     }
+
+    for (int i = 0; i < MAX_PINS; ++i)
+    {
+        pins_[i].enabled = false;
+        pins_[i].currentState = LOW;
+        pins_[i].debounceTime = 0;
+        pins_[i].triggerComplete = 0;
+    }
 }
 
 bool MessageQueue::empty()
@@ -35,7 +43,7 @@ void MessageQueue::pump_message()
 {
     int msg, arg;
     check_timers();
-    //check_pins();
+    check_pins();
     if (get_message(msg, arg))
     {
         (*cb_)(msg, arg);
@@ -129,28 +137,20 @@ void MessageQueue::check_timers()
             {
                 (*cb_)(TIMER_EVENT, timer.id);
                 if (timer.repeat)
-                {
                     timer.nextTrigger = now + timer.interval;
-                }
                 else
-                {
-                    timer.interval = 0;
-                    timer.id = 0;
-                    timer.repeat = false;
-                    timer.nextTrigger = 0;
-                }
+                    cancel_timer(n);
             }
         }
     }
 }
 
-bool MessageQueue::digitalRead(int pin, unsigned long  debounceTimeMicros)
+bool MessageQueue::digitalRead(int pin, int def, unsigned long debounceTimeMicros)
 {
     if (pin < 0 || pin > MAX_PINS)
         return false;
-    pinMode(pin, INPUT);
     pins_[pin].enabled = true;
-    pins_[pin].currentState = LOW;
+    pins_[pin].currentState = def;
     pins_[pin].debounceTime = debounceTimeMicros;
     pins_[pin].triggerComplete = 0;
     return true;

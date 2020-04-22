@@ -30,27 +30,24 @@ int TimerApp::inputTime(char c)
 
     if (c)
     {
-        read_input_ungetc(c);
+        read_keypad_ungetc(c);
     }
     while(true)
     {
-        int msg, arg;
-        if (read_input(msg, arg))
+        int h = readSwitchHook();
+        if (h < 0)  // switchhook is down
+            return tbuf.getSeconds();
+
+        char c;
+        if (read_keypad(c))
         {
-            switch (msg)
-            {
-            case EVENT_MSG_KEY:
-                if (arg == '#')
-                    return tbuf.getSeconds();
-                else if (arg == 'R')
-                    return 0;
-                else
-                {
-                    tbuf.addChar(arg);
-                }
-                break;
-            case EVENT_SWITCH_HOOK_DOWN:
+            if (c == '#')
                 return tbuf.getSeconds();
+            else if (c == 'R')
+                return 0;
+            else
+            {
+                tbuf.addChar(c);
             }
         }
         display_ns::print(
@@ -158,6 +155,20 @@ int TimerApp::OnDrawTimer(int unused)
     }
 
     return 0;
+}
+
+// DIGITAL_READ_EVENT
+int TimerApp::OnDigitalRead(int arg)
+{
+    int pin = message_queue_pin(arg);
+    int state = message_queue_state(arg);
+    if (pin == HOOK)
+    {
+        if (state == LOW)
+            OnSwitchHookUp(0);
+        else
+            OnSwitchHookDown(0);
+    }
 }
 
 // EVENT_SWITCH_HOOK_UP
@@ -379,12 +390,28 @@ void TimerApp::printMessage(char *text, int msg, int arg)
     Serial.println(buf);
 }
 
-bool TimerApp::readSwitchHook(bool hookUp)
+int TimerApp::readSwitchHook()
+{
+     bool b = readSwitchHookImpl(hookUp_);
+     if (!hookUp_ && b)
+     {
+         hookUp_= true;
+         return 1;
+     }
+     if (hookUp_ && !b)
+     {
+         hookUp_= false;
+         return -1;
+     }
+     return 0;
+}
+
+bool TimerApp::readSwitchHookImpl(bool hookUp)
 {
      bool state = digitalRead(HOOK) == LOW;
      if (hookUp != state)
      {
-        delay(1000);
+        delay(1);
         bool r = digitalRead(HOOK) == LOW;
         return r;
      }
@@ -392,59 +419,35 @@ bool TimerApp::readSwitchHook(bool hookUp)
 }
 
 // Read from the hardware, keypress or switch hook
-bool TimerApp::read_input(int& msg, int& arg)
+bool TimerApp::read_keypad(char& c)
 {
-     char c(0);
-
      if (ungetc_)
      {
-        msg = EVENT_MSG_KEY;
-        arg = ungetc_;
+        c = ungetc_;
         ungetc_= 0;
         return true;
      }
-     bool b = readSwitchHook(hookUp_);
-     if (!hookUp_ && b)
-     {
-         hookUp_= true;
-         msg = EVENT_SWITCH_HOOK_UP;
-         arg = 0;
-         return true;
-     }
-     if (hookUp_ && !b)
-     {
-         hookUp_= false;
-         msg = EVENT_SWITCH_HOOK_DOWN;
-         arg = 0;
-         return true;
-     }
-
      c = keypad_ns::getKeyPress();
      if (c)
      {
-         msg = EVENT_MSG_KEY;
-         arg = c;
          return true;
      }
-     msg = NULL_EVENT;
-     arg = 0;
      return false;
 }
 
-void TimerApp::read_input_ungetc(char c)
+void TimerApp::read_keypad_ungetc(char c)
 {
     ungetc_ = c;
 }
 
 void TimerApp::loop()
 {
-    int msg, arg;
-
+    char c;
     // Do we have any input to deal with?
-    if (read_input(msg, arg))
+    if (read_keypad(c))
     {
-        //printMessage("read_input", msg, arg);
-        messageQueue_.post_message(msg, arg);
+        //printMessage("read_keypad", msg, arg);
+        messageQueue_.post_message(EVENT_MSG_KEY, (int)c);
     }
 
     // Pump a message into our message_proc 
@@ -490,6 +493,8 @@ int message_proc(int msg, int arg)
         return pTimerApp->OnTimerEvent(arg);
     case IDLE_EVENT:
         return pTimerApp->OnIdleEvent();
+    case DIGITAL_READ_EVENT:
+        return pTimerApp->OnDigitalRead(arg);
     default:
         return pTimerApp->OnUnknown(msg, arg);
     }
@@ -501,5 +506,6 @@ void TimerApp::setup()
     display_ns::showNoTimers();
     drawTimer_.set(500);
     hookUp_ = false;
+    messageQueue_.digitalRead(HOOK, HIGH, 500);
 }
 
