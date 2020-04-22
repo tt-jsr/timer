@@ -39,6 +39,18 @@ void MessageQueue::register_proc(PROC_CALLBACK cb)
     cb_ = cb;
 }
 
+int MessageQueue::OnEvent(int msg, int arg)
+{
+    return 0;
+}
+
+int MessageQueue::callback(int msg, int arg)
+{
+    if (cb_)
+        return (*cb_)(msg, arg);
+    return OnEvent(msg, arg);
+}
+
 void MessageQueue::pump_message()
 {
     int msg, arg;
@@ -46,11 +58,11 @@ void MessageQueue::pump_message()
     check_pins();
     if (get_message(msg, arg))
     {
-        (*cb_)(msg, arg);
+        callback(msg, arg);
         return;
     }
     else
-        (*cb_)(IDLE_EVENT, 0);
+        callback(IDLE_EVENT, 0);
 }
 
 void MessageQueue::post_message(int msg, int arg)
@@ -62,7 +74,7 @@ void MessageQueue::post_message(int msg, int arg)
 
 int MessageQueue::send_message(int msg, int arg)
 {
-    return (*cb_)(msg, arg);
+    return callback(msg, arg);
 }
 
 bool MessageQueue::get_message(int& msg, int& arg)
@@ -135,7 +147,7 @@ void MessageQueue::check_timers()
         {
             if (timer.nextTrigger < now)
             {
-                (*cb_)(TIMER_EVENT, timer.id);
+                callback(TIMER_EVENT, timer.id);
                 if (timer.repeat)
                     timer.nextTrigger = now + timer.interval;
                 else
@@ -170,7 +182,7 @@ void MessageQueue::check_pins()
                     int val = pin;
                     if (s == HIGH)
                         val = val | 0x100;
-                    (*cb_)(DIGITAL_READ_EVENT, val);
+                    callback(DIGITAL_READ_EVENT, val);
                 }
                 else if(pins_[pin].triggerComplete == 0)
                 {
@@ -187,7 +199,7 @@ void MessageQueue::check_pins()
                             int val = pin;
                             if (s == HIGH)
                                 val = val | 0x100;
-                            (*cb_)(DIGITAL_READ_EVENT, val);
+                            callback(DIGITAL_READ_EVENT, val);
                             pins_[pin].triggerComplete = 0;
                         }
                     }

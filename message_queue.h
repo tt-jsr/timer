@@ -42,6 +42,11 @@ public:
     MessageQueue();
     void register_proc(PROC_CALLBACK);
 
+
+    // If no callback is registered, this virtual
+    // function will be called to be implemented in a derived class
+    virtual int OnEvent(int msg, int arg);
+
     // Post a message to the queue
     void post_message(int msg, int arg);
 
@@ -82,6 +87,7 @@ public:
 private:
     void check_timers();
     void check_pins();
+    int callback(int msg, int arg);
     Message msg_queue_[MAX_MESSAGES];
     Pin pins_[MAX_PINS];
     Timer timers_[MAX_TIMERS];
