@@ -61,7 +61,12 @@ namespace display_ns
       int min = secs/60;
       secs = secs - min*60;
 
-      snprintf(buf, sizeof(buf), "Timer %d Expired", timerno);
+      bool recording = audio_ns::isRecordingAvailable(timerno);
+      PRINT1("has recording: ", recording);
+      char *rec = "";
+      if (recording)
+          rec = "(Rec)";
+      snprintf(buf, sizeof(buf), "%d Expired %s", timerno, rec);
       display_ns::print(
         display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_LINES
         , 0, 0

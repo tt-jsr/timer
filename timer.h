@@ -3,6 +3,9 @@
 
 #include <Adafruit_SSD1306.h>
 
+#define PRINT1(a1, a2) Serial.print(a1);Serial.println(a2)
+#define PRINT2(a1, a2, a3) Serial.print(a1);Serial.print(a2);Serial.println(a3)
+
 // Assign pins
 static const int BUZZER = 2;
 static const int RCLK = 5;
@@ -32,17 +35,58 @@ static const int KS_ROW_4 = 3;
 
 enum Events
 {
+    // Create a new timer.
+    // arg: either 0, or a character 1-9. The chacater
+    // is used to populate the first digit of the input screen
     EVENT_CREATE_NEW_TIMER
+
+    // Cancel a timer
+    // arg: The timeno to cancel
     , EVENT_CANCEL_TIMER
+
+    // A timer has expired
+    // arg: The timerno that expired
     , EVENT_TIMER_EXPIRED
+
+    // Switch to a timer for display
+    // arg: The timeno to switch to
     , EVENT_SWITCH_TO_TIMER
+
+    // Draw/Paint a timer's time on the screem
+    // arg: unused
     , EVENT_DRAW_TIMER
+
+    // There is a kety press
+    // arg: the character pressed
     , EVENT_MSG_KEY
+
+    // The switch hook went up
+    // arg: unused
     , EVENT_SWITCH_HOOK_UP
+
+    // The switch hook is down
+    // arg: unused
     , EVENT_SWITCH_HOOK_DOWN
+
+    // Play q recorded message
+    // arg: The timerno recording
     , EVENT_PLAY_MESSAGE
+
+    // Stop playing a recorded message
+    // arg: The timerno
+    , EVENT_STOP_PLAYING
+
+    // Start recording
+    // arg: The timerno
     , EVENT_START_RECORDING
+
+    // Stop recording
+    // arg: The timerno
     , EVENT_STOP_RECORDING
+
+    // Check for expired timers
+    // The display will switch to the oldest expired timer
+    // arg: unused
     , EVENT_CHECK_FOR_EXPIRED_TIMERS
 };
 
@@ -54,10 +98,12 @@ namespace timer_ns
 {
     static const int MAX_TIMERS = 10;
     static const int TIMER_INVALID = 32767;
-    extern int timers[MAX_TIMERS];
 
     // Return the timerno on success, otherwise -1
     int createTimer(int timeout);
+
+    // Start the timer
+    bool startTimer(int timerno);
 
     // Cancel a timer
     void clearTimer(int timerno);
@@ -69,15 +115,16 @@ namespace timer_ns
     bool isTimerExpired(int timerno);
 
     // returns the next timer to expire
-    int nextTimer();
+    int nextRunningTimer();
 
     // Returns the oldest expired timer
-    int getExpiredTimer();
+    int nextExpiredTimer();
 
     // Return  the remaining time. If < 0, it has expired and is 
     // now counting up.
     // returns TIMER_INVALID if the timer is not valid
-    int checkTimer(int timerno);
+    int timeRemaining(int timerno);
+
 
     void setup();
 }
@@ -163,10 +210,13 @@ namespace keypad_ns
  */
 namespace audio_ns
 {
-    int recordMessage();
-    void playMessage(int);
-    void ringTimer();
-    void buzzer(int freq);
+    int startRecording(int);
+    void stopRecording(int);
+    void startPlaying(int);
+    void stopPlaying(int);
+    void eraseRecording(int);
+    void playRingTone();
+    bool isRecordingAvailable(int timerno);
 
     void setup();
 }

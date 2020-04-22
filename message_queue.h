@@ -1,8 +1,9 @@
 #ifndef MESSAGE_QUEUE_H_
 #define MESSAGE_QUEUE_H_
 
-#define MAX_MESSAGES 16 // power of two
+#define MAX_MESSAGES 16 // must be a power of two
 #define MAX_TIMERS   10
+#define MAX_PINS     20
 
 struct Message
 {
@@ -18,9 +19,22 @@ struct Timer
     int id;
 };
 
+struct Pin
+{
+    bool digitalRead;
+    bool enabled;
+    bool currentState;  // for digital read only
+    unsigned long  debounceTime;   // for digital read only
+    unsigned long  triggerComplete;    // for digital read only
+};
+
 const int NULL_EVENT = 32000;
 const int IDLE_EVENT = 32001;
 const int TIMER_EVENT = 32002;
+const int DIGITAL_READ_EVENT = 32003;
+
+int message_queue_pin(int eventValue);
+int message_queue_state(int eventValue);
 
 typedef int (*PROC_CALLBACK)(int, int);
 class MessageQueue
@@ -60,9 +74,16 @@ public:
 
     // Cancel a timer given the id
     void cancel_timer(int id);
+
+    // Generate DIGITAL_READ_EVENT messages when this given pin
+    // changes state
+    // debounce: Use a delay to debounce the reading
+    bool digitalRead(int pin, unsigned long debounceTimeMicros);
 private:
     void check_timers();
+    void check_pins();
     Message msg_queue_[MAX_MESSAGES];
+    Pin pins_[MAX_PINS];
     Timer timers_[MAX_TIMERS];
     int consumer_;
     int producer_;

@@ -35,6 +35,7 @@ void MessageQueue::pump_message()
 {
     int msg, arg;
     check_timers();
+    //check_pins();
     if (get_message(msg, arg))
     {
         (*cb_)(msg, arg);
@@ -126,16 +127,10 @@ void MessageQueue::check_timers()
         {
             if (timer.nextTrigger < now)
             {
-                //Serial.print("now: ");
-                //Serial.print(now);
-                //Serial.print(" nextTrigger: ");
-                //Serial.println(timer.nextTrigger);
                 (*cb_)(TIMER_EVENT, timer.id);
                 if (timer.repeat)
                 {
                     timer.nextTrigger = now + timer.interval;
-                    //Serial.print("nextTrigger: ");
-                    //Serial.println(timer.nextTrigger);
                 }
                 else
                 {
@@ -147,4 +142,69 @@ void MessageQueue::check_timers()
             }
         }
     }
+}
+
+bool MessageQueue::digitalRead(int pin, unsigned long  debounceTimeMicros)
+{
+    if (pin < 0 || pin > MAX_PINS)
+        return false;
+    pinMode(pin, INPUT);
+    pins_[pin].enabled = true;
+    pins_[pin].currentState = LOW;
+    pins_[pin].debounceTime = debounceTimeMicros;
+    pins_[pin].triggerComplete = 0;
+    return true;
+}
+
+void MessageQueue::check_pins()
+{
+    for (int pin = 0; pin < MAX_PINS; pin++)
+    {
+        if (pins_[pin].enabled)
+        {
+            int s = ::digitalRead(pin);
+            if(pins_[pin].currentState != s)
+            {
+                if (pins_[pin].debounceTime == 0)
+                {
+                    int val = pin;
+                    if (s == HIGH)
+                        val = val | 0x100;
+                    (*cb_)(DIGITAL_READ_EVENT, val);
+                }
+                else if(pins_[pin].triggerComplete == 0)
+                {
+                    pins_[pin].triggerComplete = micros() + pins_[pin].debounceTime;
+                }
+                else
+                {
+                    if (pins_[pin].triggerComplete < micros())
+                    {
+                        int s = ::digitalRead(pin);
+                        if (s != pins_[pin].currentState)
+                        {
+                            pins_[pin].currentState = s;
+                            int val = pin;
+                            if (s == HIGH)
+                                val = val | 0x100;
+                            (*cb_)(DIGITAL_READ_EVENT, val);
+                            pins_[pin].triggerComplete = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+int message_queue_pin(int eventValue)
+{
+    return eventValue & 0xff;
+}
+
+int message_queue_state(int eventValue)
+{
+    if (eventValue & 0x100)
+        return HIGH;
+    return LOW;
 }

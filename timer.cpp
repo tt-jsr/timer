@@ -6,16 +6,27 @@
 
 namespace timer_ns
 {
-    int timers[MAX_TIMERS];
+    struct Timer
+    {
+        int interval;
+        int trigger;
+        bool running;
+        bool recording_available;
+    };
+
+    Timer timers[timer_ns::MAX_TIMERS];
 
     /**************************************/
     int createTimer(int timeout)
     {
-        for (int i = 0; i < MAX_TIMERS; i++)
+        for (int i = 0; i < timer_ns::MAX_TIMERS; i++)
         {
-            if (timers[i] == TIMER_INVALID)
+            if (timers[i].interval == 0)
             {
-                timers[i] = millis()/1000 + timeout;
+                timers[i].interval = timeout;
+                timers[i].trigger = 0;
+                timers[i].running = false;
+                timers[i].recording_available = false;
                 return i;
             }
         }
@@ -23,18 +34,31 @@ namespace timer_ns
     }
 
     /**************************************/
-    int nextTimer()
+    bool startTimer(int timerno)
+    {
+        if (timers[timerno].interval == 0)
+            return false;
+        if (timers[timerno].running)
+            return true;
+
+        timers[timerno].trigger = millis()/1000 + timers[timerno].interval;
+        timers[timerno].running = true;
+        return true;
+    }
+
+    /**************************************/
+    int nextRunningTimer()
     {
         int closest = TIMER_INVALID;
         int timerno = TIMER_INVALID;
-        for (int i = 0; i < MAX_TIMERS; i++)
+        int now = millis()/1000;
+        for (int i = 0; i < timer_ns::MAX_TIMERS; i++)
         {
-            int t = checkTimer(i);
-            if (t != TIMER_INVALID)
+            if (timers[i].running && timers[i].trigger > now)
             {
-                if (t > 0 && t < closest)
+                if (timers[i].trigger < closest)
                 {
-                    closest = t;
+                    closest = timers[i].trigger;
                     timerno = i;
                 }
             }
@@ -45,23 +69,26 @@ namespace timer_ns
     /**************************************/
     void clearTimer(int timerno)
     {
-      if (timerno < 0 || timerno >= MAX_TIMERS)
+      if (timerno < 0 || timerno >= timer_ns::MAX_TIMERS)
           return;
-       timers[timerno] = TIMER_INVALID;
+       timers[timerno].interval = 0;
+       timers[timerno].trigger = 0;
+       timers[timerno].running = 0;
+       timers[timerno].recording_available = false;
     }
 
     /**************************************/
     bool isTimerRunning(int timerno)
     {
-        if (timerno < 0 || timerno >= MAX_TIMERS)
+        if (timerno < 0 || timerno >= timer_ns::MAX_TIMERS)
             return false;
-        return timers[timerno] != TIMER_INVALID;
+        return timers[timerno].running;
     }
 
     /**************************************/
     bool isTimerExpired(int timerno)
     {
-        int t = checkTimer(timerno);
+        int t = timeRemaining(timerno);
         if (t == TIMER_INVALID)
             return false;
         if (t < 0)
@@ -70,42 +97,60 @@ namespace timer_ns
     }
 
     /**************************************/
-    int getExpiredTimer()
+    int nextExpiredTimer()
     {
-        int oldestTime = 0;
-        int oldestTimer = TIMER_INVALID;
-        for (int timer = 0; timer < timer_ns::MAX_TIMERS; timer++)
+        int oldest = millis()/1000;
+        int timerno = TIMER_INVALID;
+        for (int i = 0; i < timer_ns::MAX_TIMERS; i++)
         {
-            int t = checkTimer(timer);
-            if (t != TIMER_INVALID)
+            if (timers[i].running && timers[i].trigger < oldest)
             {
-                if (t < oldestTime)
-                {
-                    oldestTime = t;
-                    oldestTimer = timer;
-                }
+                oldest = timers[i].trigger;
+                timerno = i;
             }
         }
-        return oldestTimer;
+        return timerno;
     }
 
     /**************************************/
-    int checkTimer(int timerno)
+    int timeRemaining(int timerno)
     {
-      if (timerno < 0 || timerno >= MAX_TIMERS)
+      if (timerno < 0 || timerno >= timer_ns::MAX_TIMERS)
           return TIMER_INVALID;
-      if (timers[timerno] == TIMER_INVALID)
+      if (timers[timerno].interval == 0)
+          return TIMER_INVALID;
+      if (timers[timerno].running == false)
           return TIMER_INVALID;
 
       int now = millis()/1000;
-      return timers[timerno]-now;
+      return timers[timerno].trigger-now;
     }
 
+    /**************************************/
+    void setRecordingAvailable(int timerno)
+    {
+      if (timerno < 0 || timerno >= timer_ns::MAX_TIMERS)
+          return;
+      timers[timerno].recording_available = true;
+    }
+
+    /**************************************/
+    bool getRecordingAvailable(int timerno)
+    {
+      if (timerno < 0 || timerno >= timer_ns::MAX_TIMERS)
+          return false;
+      return timers[timerno].recording_available;
+    }
 
     /**************************************/
     void setup() 
     {
-      for (int i= 0; i < MAX_TIMERS; i++)
-          timers[i] = TIMER_INVALID;
+        for (int i= 0; i < timer_ns::MAX_TIMERS; i++)
+        {
+            timers[i].interval = 0;
+            timers[i].trigger = 0;
+            timers[i].running = 0;
+            timers[i].recording_available = true;
+        }
     }
 }

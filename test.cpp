@@ -20,7 +20,7 @@ void TimerTest::setup()
 
 void TimerTest::loop()
 {
- int timeRemaining = timer_ns::checkTimer(timerno_);
+ int timeRemaining = timer_ns::timeRemaining(timerno_);
  if (timeRemaining < 0)
      display_ns::showTimerExpired(timerno_, timeRemaining);
  else
