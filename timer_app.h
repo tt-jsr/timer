@@ -10,23 +10,25 @@ struct TimerApp : public Application
     TimerApp();
 
     // Event handlers
-    int OnCreateNewTimer(int arg);
-    int OnCancelTimer(int arg);
-    int OnTimerExpired(int arg);
-    int OnSwitchToTimer(int arg);
-    int OnDrawTimer(int arg);
-    int OnSwitchHookUp(int arg);
-    int OnSwitchHookDown(int arg);
     int OnKey(int arg);
-    int OnPlayMessage(int arg);
-    int OnStopPlayingMessage(int timerno);
-    int OnStartRecording(int arg);
-    int OnStopRecording(int arg);
-    int OnCheckForExpiredTimers(int arg);
-    int OnTimerEvent(int arg);
-    int OnDigitalRead(int arg);
+    int OnTimerEvent(int id);
+    int OnDigitalRead(int pin, int val);
     int OnIdleEvent();
     int OnUnknown(int msg, int arg);
+
+    // Functions
+    int CreateNewTimer(char c);
+    void CancelTimer(int timerno);
+    void TimerExpired(int timerno);
+    void SwitchToTimer(int timerno);
+    void DrawTimer();
+    void PlayMessage(int timerno);
+    void StopPlayingMessage(int timerno);
+    void StartRecording(int timerno);
+    void StopRecording(int timerno);
+    void CheckForExpiredTimers();
+    void OnSwitchHookUp();
+    void OnSwitchHookDown();
 
 
     // Read hardware inputs
@@ -46,7 +48,6 @@ struct TimerApp : public Application
     int inputTime(char c);
 
 // data
-    IntervalTimer drawTimer_;
     int currentTimer_;      // The current timerno being displayed
     bool buzzerOn_;         // Buzzer is currently on
     bool buzzerRunning_;    // Buzzer is running. This means BUZZER timer event is running

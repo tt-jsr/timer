@@ -35,59 +35,9 @@ static const int KS_ROW_4 = 3;
 
 enum Events
 {
-    // Create a new timer.
-    // arg: either 0, or a character 1-9. The chacater
-    // is used to populate the first digit of the input screen
-    EVENT_CREATE_NEW_TIMER
-
-    // Cancel a timer
-    // arg: The timeno to cancel
-    , EVENT_CANCEL_TIMER
-
-    // A timer has expired
-    // arg: The timerno that expired
-    , EVENT_TIMER_EXPIRED
-
-    // Switch to a timer for display
-    // arg: The timeno to switch to
-    , EVENT_SWITCH_TO_TIMER
-
-    // Draw/Paint a timer's time on the screem
-    // arg: unused
-    , EVENT_DRAW_TIMER
-
-    // There is a kety press
+    // There is a key press
     // arg: the character pressed
-    , EVENT_MSG_KEY
-
-    // The switch hook went up
-    // arg: unused
-    , EVENT_SWITCH_HOOK_UP
-
-    // The switch hook is down
-    // arg: unused
-    , EVENT_SWITCH_HOOK_DOWN
-
-    // Play q recorded message
-    // arg: The timerno recording
-    , EVENT_PLAY_MESSAGE
-
-    // Stop playing a recorded message
-    // arg: The timerno
-    , EVENT_STOP_PLAYING
-
-    // Start recording
-    // arg: The timerno
-    , EVENT_START_RECORDING
-
-    // Stop recording
-    // arg: The timerno
-    , EVENT_STOP_RECORDING
-
-    // Check for expired timers
-    // The display will switch to the oldest expired timer
-    // arg: unused
-    , EVENT_CHECK_FOR_EXPIRED_TIMERS
+    EVENT_MSG_KEY
 };
 
 

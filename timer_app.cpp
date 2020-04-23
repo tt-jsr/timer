@@ -68,41 +68,37 @@ int TimerApp::inputTime(char c)
 }
 
 static const int BUZZER_TIMER = 1;
+static const int DRAW_TIMER = 2;
+static const int CHECK_TIMERS = 3;
 
-// EVENT_CREATE_NEW_TIMER
-int TimerApp::OnCreateNewTimer(int character)
+int TimerApp::CreateNewTimer(char character)
 {
-    int secs = inputTime((char)character);
+    int secs = inputTime(character);
     if (secs == 0)
-        return 0;
+        return timer_ns::TIMER_INVALID;
     int timerno = timer_ns::createTimer(secs);
     if (timerno == timer_ns::TIMER_INVALID)
-        return;
+        return timer_ns::TIMER_INVALID;
     if (hookUp_)
-        messageQueue_.post_message(EVENT_START_RECORDING, timerno);
+        StartRecording(timerno);
     else
     {
         timer_ns::startTimer(timerno);
         currentTimer_ = timerno;
     }
-
-    return 0;
+    return timerno;
 }
 
-// EVENT_CANCEL_TIMER
-int TimerApp::OnCancelTimer(int timerno)
+void TimerApp::CancelTimer(int timerno)
 {
     timer_ns::clearTimer(timerno);
     currentTimer_ = timer_ns::nextRunningTimer();
     noTone(BUZZER);
     messageQueue_.cancel_timer(BUZZER_TIMER);
     buzzerRunning_ = false;
-
-    return 0;
 }
 
-// EVENT_TIMER_EXPIRED
-int TimerApp::OnTimerExpired(int timerno)
+void TimerApp::TimerExpired(int timerno)
 {
     if (!buzzerRunning_)
     {
@@ -111,23 +107,17 @@ int TimerApp::OnTimerExpired(int timerno)
         buzzerOn_ = true;
         buzzerRunning_ = true;
     }
-
-    return 0;
 }
 
-// EVENT_SWITCH_TO_TIMER
-int TimerApp::OnSwitchToTimer(int timerno)
+void TimerApp::SwitchToTimer(int timerno)
 {
     if (timer_ns::isTimerRunning(timerno))
     {
         currentTimer_ = timerno;
     }
-
-    return 0;
 }
 
-// EVENT_DRAW_TIMER
-int TimerApp::OnDrawTimer(int unused)
+void TimerApp::DrawTimer()
 {
     if (recordingTimer_ != timer_ns::TIMER_INVALID) // We are not going to paint the screen while recording
         return;
@@ -153,56 +143,48 @@ int TimerApp::OnDrawTimer(int unused)
     {
         display_ns::showNoTimers();
     }
-
-    return 0;
 }
 
 // DIGITAL_READ_EVENT
-int TimerApp::OnDigitalRead(int arg)
+int TimerApp::OnDigitalRead(int pin, int state)
 {
-    int pin = message_queue_pin(arg);
-    int state = message_queue_state(arg);
     if (pin == HOOK)
     {
         if (state == LOW)
-            OnSwitchHookUp(0);
+            OnSwitchHookUp();
         else
-            OnSwitchHookDown(0);
+            OnSwitchHookDown();
     }
-}
-
-// EVENT_SWITCH_HOOK_UP
-int TimerApp::OnSwitchHookUp(int unused)
-{
-    if (timer_ns::isTimerExpired(currentTimer_))
-    {
-        messageQueue_.post_message(EVENT_CANCEL_TIMER, currentTimer_);
-        messageQueue_.post_message(EVENT_PLAY_MESSAGE, currentTimer_);
-    }
-    else
-    {  
-        messageQueue_.post_message(EVENT_CREATE_NEW_TIMER, 0);
-    }
-
     return 0;
 }
 
-// EVENT_SWITCH_HOOK_DOWN
-int TimerApp::OnSwitchHookDown(int unused)
+void TimerApp::OnSwitchHookUp()
+{
+    if (timer_ns::isTimerExpired(currentTimer_))
+    {
+        int t = currentTimer_;
+        CancelTimer(currentTimer_);
+        PlayMessage(t);
+    }
+    else
+    {  
+        CreateNewTimer(0);
+    }
+}
+
+void TimerApp::OnSwitchHookDown()
 {
     if (recordingTimer_ != timer_ns::TIMER_INVALID)
     {
-        messageQueue_.post_message(EVENT_STOP_RECORDING, recordingTimer_);
+        StopRecording(recordingTimer_);
         recordingTimer_ = timer_ns::TIMER_INVALID;
     }
 
     if (playingTimer_ != timer_ns::TIMER_INVALID)
     {
-        messageQueue_.post_message(EVENT_STOP_PLAYING, playingTimer_);
+        StopPlayingMessage(playingTimer_);
         playingTimer_ = timer_ns::TIMER_INVALID;
     }
-
-    return 0;
 }
 
 // EVENT_MSG_KEY
@@ -210,30 +192,29 @@ int TimerApp::OnKey(int character)
 {
     if (character == 'R')
     {
-        messageQueue_.post_message(EVENT_CANCEL_TIMER, currentTimer_);
+        CancelTimer(currentTimer_);
     }
     if (character == '#')
     {
         if (timer_ns::isTimerExpired(currentTimer_))
-            messageQueue_.post_message(EVENT_CANCEL_TIMER, currentTimer_);
+            CancelTimer(currentTimer_);
         else
-            messageQueue_.post_message(EVENT_CREATE_NEW_TIMER, 0);
+            CreateNewTimer(0);
     }
     if (character >= '0' && character <= '9')
     {
         if (currentTimer_ == timer_ns::TIMER_INVALID)
         {
-            messageQueue_.post_message(EVENT_CREATE_NEW_TIMER, character);
+            CreateNewTimer(character);
         }
         else
-            messageQueue_.post_message(EVENT_SWITCH_TO_TIMER, character - '0');
+            SwitchToTimer(character - '0');
     }
 
     return 0;
 }
 
-// EVENT_PLAY_MESSAGE
-int TimerApp::OnPlayMessage(int timerno)
+void TimerApp::PlayMessage(int timerno)
 {
     playingTimer_ = timerno;
     display_ns::print(
@@ -241,19 +222,15 @@ int TimerApp::OnPlayMessage(int timerno)
         , 0, 0
         , "Playing\n   message...");
     audio_ns::startPlaying(timerno);
-    return 0;
 }
 
-// EVENT_STOP_PLAYING
-int TimerApp::OnStopPlayingMessage(int timerno)
+void TimerApp::StopPlayingMessage(int timerno)
 {
     audio_ns::stopPlaying(timerno);
     audio_ns::eraseRecording(timerno);
-    return 0;
 }
 
-// EVENT_START_RECORDING
-int TimerApp::OnStartRecording(int timerno)
+void TimerApp::StartRecording(int timerno)
 {
     recordingTimer_ = timerno; 
                             // STOP_RECORDING will then start the timer
@@ -263,11 +240,9 @@ int TimerApp::OnStartRecording(int timerno)
         , "Record\n   message...");
 
     audio_ns::startRecording(timerno);
-    return 0;
 }
 
-// EVENT_STOP_RECORDING
-int TimerApp::OnStopRecording(int timerno)
+void TimerApp::StopRecording(int timerno)
 {
     audio_ns::stopRecording(timerno);
     if (timer_ns::startTimer(timerno))
@@ -276,29 +251,24 @@ int TimerApp::OnStopRecording(int timerno)
     }
     else
         timer_ns::clearTimer(timerno);
-
-    return 0;
 }
 
-// EVENT_CHECK_FOR_EXPIRED_TIMERS
-int TimerApp::OnCheckForExpiredTimers(int unused)
+void TimerApp::CheckForExpiredTimers()
 {
     int t = timer_ns::nextExpiredTimer();
     if (t != timer_ns::TIMER_INVALID)
     {
-        messageQueue_.post_message(EVENT_SWITCH_TO_TIMER, t);
-        messageQueue_.post_message(EVENT_TIMER_EXPIRED, t);
+        SwitchToTimer(t);
+        TimerExpired(t);
     }
-
-    return 0;
 }
 
 // TIMER_EVENT
 // This is an event timer, not a application timer
-// See OnTimerExpired for application timers
-int TimerApp::OnTimerEvent(int queue_timerno)
+// See TimerExpired for application timers
+int TimerApp::OnTimerEvent(int event_timerno)
 {
-    if (queue_timerno == BUZZER_TIMER)
+    if (event_timerno == BUZZER_TIMER)
     {
         if (buzzerOn_)
             noTone(BUZZER);
@@ -307,20 +277,22 @@ int TimerApp::OnTimerEvent(int queue_timerno)
         buzzerOn_ = !buzzerOn_;
     }
 
+    if (event_timerno == DRAW_TIMER)
+    {
+        DrawTimer();
+    }
+
+    if (event_timerno == CHECK_TIMERS)
+    {
+        CheckForExpiredTimers();
+    }
+
     return 0;
 }
 
 // IDLE_EVENT
 int TimerApp::OnIdleEvent()
 {
-    // If the queue is empty and it is time, we will
-    // draw the current timer and check for expired timers
-    if (drawTimer_.check())
-    {
-        messageQueue_.post_message(EVENT_DRAW_TIMER, 0);
-        messageQueue_.post_message(EVENT_CHECK_FOR_EXPIRED_TIMERS, 0);
-    }
-
     return 0;
 }
 
@@ -332,62 +304,6 @@ int TimerApp::OnUnknown(int msg, int arg)
     Serial.print(arg);
 
     return 0;
-}
-
-
-void TimerApp::printMessage(char *text, int msg, int arg)
-{
-    char buf[128];
-    switch (msg)
-    {
-    case NULL_EVENT:
-        sprintf(buf, "%s: msg: NULL_EVENT, arg: %d", text, arg);
-        break;
-    case EVENT_CREATE_NEW_TIMER:
-        sprintf(buf, "%s: msg: CREATE_NEW_TIMER, arg: %d", text, arg);
-        break;
-    case EVENT_CANCEL_TIMER:
-        sprintf(buf, "%s: msg: CANCEL_TIMER, arg: %d", text, arg);
-        break;
-    case EVENT_TIMER_EXPIRED:
-        sprintf(buf, "%s: msg: TIMER_EXPIRED, arg: %d", text, arg);
-        break;
-    case EVENT_SWITCH_TO_TIMER:
-        sprintf(buf, "%s: msg: SWITCH_TO_TIMER, arg: %d", text, arg);
-        break;
-    case EVENT_MSG_KEY:
-        sprintf(buf, "%s: msg: MSG_KEY, arg: %c", text, (char)arg);
-        break;
-    case EVENT_SWITCH_HOOK_UP:
-        sprintf(buf, "%s: msg: SWITCH_HOOK_UP, arg: %d", text, arg);
-        break;
-    case EVENT_SWITCH_HOOK_DOWN:
-        sprintf(buf, "%s: msg: SWITCH_HOOK_DOWN, arg: %d", text, arg);
-        break;
-    case EVENT_PLAY_MESSAGE:
-        sprintf(buf, "%s: msg: PLAY_MESSAGE, arg: %d", text, arg);
-        break;
-    case EVENT_START_RECORDING:
-        sprintf(buf, "%s: msg: START_RECORDING, arg: %d", text, arg);
-        break;
-    case EVENT_DRAW_TIMER:
-        return;
-        sprintf(buf, "%s: msg: DRAW_TIMER, arg: %d", text, arg);
-        break;
-    case EVENT_CHECK_FOR_EXPIRED_TIMERS:
-        return;
-        sprintf(buf, "%s: msg: CHECK_FOR_EXPIRED_TIMERS, arg: %d", text, arg);
-        break;
-    case TIMER_EVENT:
-        sprintf(buf, "%s: msg: TIMER_EVENT, arg: %d", text, arg);
-        break;
-    case IDLE_EVENT:
-        sprintf(buf, "%s: msg: IDLE_EVENT, arg: %d", text, arg);
-        break;
-    default:
-        sprintf(buf, "%s: msg: %d, arg: %d", text, msg, arg);
-    }
-    Serial.println(buf);
 }
 
 int TimerApp::readSwitchHook()
@@ -418,7 +334,7 @@ bool TimerApp::readSwitchHookImpl(bool hookUp)
      return hookUp;
 }
 
-// Read from the hardware, keypress or switch hook
+// Read a keypress
 bool TimerApp::read_keypad(char& c)
 {
      if (ungetc_)
@@ -447,7 +363,7 @@ void TimerApp::loop()
     if (read_keypad(c))
     {
         //printMessage("read_keypad", msg, arg);
-        messageQueue_.post_message(EVENT_MSG_KEY, (int)c);
+        messageQueue_.post_message(EVENT_MSG_KEY, (int)c, 0);
     }
 
     // Pump a message into our message_proc 
@@ -457,55 +373,59 @@ void TimerApp::loop()
 
 extern Application *pApp;
 
-int message_proc(int msg, int arg)
+int event_handler(int msg, int arg1, int arg2)
 {
     TimerApp *pTimerApp = (TimerApp *)pApp;
     //pTimerApp->printMessage("message_proc", msg, arg);
     switch (msg)
     {
-    case EVENT_CREATE_NEW_TIMER:
-        return pTimerApp->OnCreateNewTimer(arg);
-    case EVENT_CANCEL_TIMER:
-        return pTimerApp->OnCancelTimer(arg);
-    case EVENT_TIMER_EXPIRED:
-        return pTimerApp->OnTimerExpired(arg);
-    case EVENT_SWITCH_TO_TIMER:
-        return pTimerApp->OnSwitchToTimer(arg);
-    case EVENT_DRAW_TIMER:
-        return pTimerApp->OnDrawTimer(arg);
-    case EVENT_SWITCH_HOOK_UP:
-        return pTimerApp->OnSwitchHookUp(arg);
-    case EVENT_SWITCH_HOOK_DOWN:
-        return pTimerApp->OnSwitchHookDown(arg);
     case EVENT_MSG_KEY:
-        return pTimerApp->OnKey(arg);
-    case EVENT_PLAY_MESSAGE:
-        return pTimerApp->OnPlayMessage(arg);
-    case EVENT_STOP_PLAYING:
-        return pTimerApp->OnStopPlayingMessage(arg);
-    case EVENT_START_RECORDING:
-        return pTimerApp->OnStartRecording(arg);
-    case EVENT_STOP_RECORDING:
-        return pTimerApp->OnStopRecording(arg);
-    case EVENT_CHECK_FOR_EXPIRED_TIMERS:
-        return pTimerApp->OnCheckForExpiredTimers(arg);
+        return pTimerApp->OnKey((char)arg1);
     case TIMER_EVENT:
-        return pTimerApp->OnTimerEvent(arg);
+        return pTimerApp->OnTimerEvent(arg1);
     case IDLE_EVENT:
         return pTimerApp->OnIdleEvent();
     case DIGITAL_READ_EVENT:
-        return pTimerApp->OnDigitalRead(arg);
+        return pTimerApp->OnDigitalRead(arg1, arg2);
     default:
-        return pTimerApp->OnUnknown(msg, arg);
+        return pTimerApp->OnUnknown(msg, arg1);
     }
 }
+
+void TimerApp::printMessage(char *text, int msg, int arg)
+{
+    char buf[128];
+    switch (msg)
+    {
+    case NULL_EVENT:
+        sprintf(buf, "%s: msg: NULL_EVENT, arg: %d", text, arg);
+        break;
+    case EVENT_MSG_KEY:
+        sprintf(buf, "%s: msg: MSG_KEY, arg: %c", text, (char)arg);
+        break;
+    case TIMER_EVENT:
+        sprintf(buf, "%s: msg: TIMER_EVENT, arg: %d", text, arg);
+        break;
+    case IDLE_EVENT:
+        sprintf(buf, "%s: msg: IDLE_EVENT, arg: %d", text, arg);
+        break;
+    case DIGITAL_READ_EVENT:
+        sprintf(buf, "%s: msg: DIGITAL_READ_EVENT, arg: %d", text, arg);
+        break;
+    default:
+        sprintf(buf, "%s: msg: %d, arg: %d", text, msg, arg);
+    }
+    Serial.println(buf);
+}
+
 void TimerApp::setup()
 {
-    messageQueue_.register_proc(::message_proc);
+    messageQueue_.register_event_handler(::event_handler);
     display_ns::display.clearDisplay();
     display_ns::showNoTimers();
-    drawTimer_.set(500);
     hookUp_ = false;
     messageQueue_.digitalRead(HOOK, HIGH, 500);
+    messageQueue_.create_timer(DRAW_TIMER, 500, true);
+    messageQueue_.create_timer(CHECK_TIMERS, 500, true);
 }
 

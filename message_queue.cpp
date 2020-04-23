@@ -9,7 +9,8 @@ MessageQueue::MessageQueue()
     for (int i = 0; i < MAX_MESSAGES;++i)
     {
         msg_queue_[i].msg_type = NULL_EVENT;
-        msg_queue_[i].arg=0;
+        msg_queue_[i].arg1 = 0;
+        msg_queue_[i].arg2 = 0;
     }
 
     for (int i = 0; i < MAX_TIMERS;++i)
@@ -22,6 +23,7 @@ MessageQueue::MessageQueue()
 
     for (int i = 0; i < MAX_PINS; ++i)
     {
+        pins_[i].pin = 0;
         pins_[i].enabled = false;
         pins_[i].currentState = LOW;
         pins_[i].debounceTime = 0;
@@ -34,75 +36,81 @@ bool MessageQueue::empty()
     return consumer_ == producer_;
 }
 
-void MessageQueue::register_proc(PROC_CALLBACK cb)
+void MessageQueue::register_event_handler(EVENT_CALLBACK cb)
 {
     cb_ = cb;
 }
 
-int MessageQueue::OnEvent(int msg, int arg)
+int MessageQueue::OnEvent(int msg, int arg1, int arg2)
 {
     return 0;
 }
 
-int MessageQueue::callback(int msg, int arg)
+int MessageQueue::callback(int msg, int arg1, int arg2)
 {
     if (cb_)
-        return (*cb_)(msg, arg);
-    return OnEvent(msg, arg);
+        return (*cb_)(msg, arg1, arg2);
+    else
+        return OnEvent(msg, arg1, arg2);
 }
 
 void MessageQueue::pump_message()
 {
-    int msg, arg;
+    int msg, arg1, arg2;
     check_timers();
     check_pins();
-    if (get_message(msg, arg))
+    if (get_message(msg, arg1, arg2))
     {
-        callback(msg, arg);
+        callback(msg, arg1, arg2);
         return;
     }
     else
-        callback(IDLE_EVENT, 0);
+        callback(IDLE_EVENT, 0, 0);
 }
 
-void MessageQueue::post_message(int msg, int arg)
+void MessageQueue::post_message(int msg, int arg1, int arg2)
 {
     msg_queue_[producer_].msg_type = msg;
-    msg_queue_[producer_].arg = arg;
+    msg_queue_[producer_].arg1 = arg1;
+    msg_queue_[producer_].arg2 = arg2;
     producer_ = (++producer_) & (MAX_MESSAGES-1);
 }
 
-int MessageQueue::send_message(int msg, int arg)
+int MessageQueue::send_message(int msg, int arg1, int arg2)
 {
-    return callback(msg, arg);
+    return callback(msg, arg1, arg2);
 }
 
-bool MessageQueue::get_message(int& msg, int& arg)
+bool MessageQueue::get_message(int& msg, int& arg1, int& arg2)
 {
     if (producer_ == consumer_)
     {
         msg_queue_[consumer_].msg_type = NULL_EVENT;
-        msg_queue_[consumer_].arg = 0;
+        msg_queue_[consumer_].arg1 = 0;
+        msg_queue_[consumer_].arg2 = 0;
         return false;
     }
 
     msg = msg_queue_[consumer_].msg_type;
-    arg = msg_queue_[consumer_].arg;
+    arg1 = msg_queue_[consumer_].arg1;
+    arg2 = msg_queue_[consumer_].arg2;
     consumer_ = (++consumer_) & (MAX_MESSAGES-1);
     return true;
 }
 
-bool MessageQueue::peek_message(int& msg, int& arg)
+bool MessageQueue::peek_message(int& msg, int& arg1, int& arg2)
 {
     if (producer_ == consumer_)
     {
         msg_queue_[consumer_].msg_type = NULL_EVENT;
-        msg_queue_[consumer_].arg = 0;
+        msg_queue_[consumer_].arg1 = 0;
+        msg_queue_[consumer_].arg2 = 0;
         return false;
     }
 
     msg = msg_queue_[consumer_].msg_type;
-    arg = msg_queue_[consumer_].arg;
+    arg1 = msg_queue_[consumer_].arg1;
+    arg2 = msg_queue_[consumer_].arg2;
     return true;
 }
 
@@ -147,7 +155,7 @@ void MessageQueue::check_timers()
         {
             if (timer.nextTrigger < now)
             {
-                callback(TIMER_EVENT, timer.id);
+                callback(TIMER_EVENT, timer.id, 0);
                 if (timer.repeat)
                     timer.nextTrigger = now + timer.interval;
                 else
@@ -159,64 +167,105 @@ void MessageQueue::check_timers()
 
 bool MessageQueue::digitalRead(int pin, int def, unsigned long debounceTimeMicros)
 {
-    if (pin < 0 || pin > MAX_PINS)
-        return false;
-    pins_[pin].enabled = true;
-    pins_[pin].currentState = def;
-    pins_[pin].debounceTime = debounceTimeMicros;
-    pins_[pin].triggerComplete = 0;
-    return true;
+    for (int i = 0; i < MAX_PINS; ++i)
+    {
+        if (pins_[i].enabled == false)
+        {
+            pins_[i].pin = pin;
+            pins_[i].digitalRead = true;
+            pins_[i].enabled = true;
+            pins_[i].currentState = def;
+            pins_[i].debounceTime = debounceTimeMicros;
+            pins_[i].triggerComplete = 0;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MessageQueue::analogRead(int pin, unsigned long timeMicros)
+{
+    for (int i = 0; i < MAX_PINS; ++i)
+    {
+        if (pins_[i].enabled == false)
+        {
+            pins_[i].pin = pin;
+            pins_[i].digitalRead = false;
+            pins_[i].enabled = true;
+            pins_[i].currentState = LOW;
+            pins_[i].debounceTime = timeMicros;
+            pins_[i].triggerComplete = 0;
+            return true;
+        }
+    }
+    return false;
+
 }
 
 void MessageQueue::check_pins()
 {
-    for (int pin = 0; pin < MAX_PINS; pin++)
+    for (int idx = 0; idx < MAX_PINS; idx++)
     {
-        if (pins_[pin].enabled)
+        if (pins_[idx].enabled)
         {
-            int s = ::digitalRead(pin);
-            if(pins_[pin].currentState != s)
+            if (pins_[idx].digitalRead)
+                digital_check(pins_[idx]);
+            else
+                analog_check(pins_[idx]);
+        }
+    }
+}
+
+void MessageQueue::digital_check(Pin& pin)
+{
+    int s = ::digitalRead(pin.pin);
+    if(pin.currentState != s)
+    {
+        if (pin.debounceTime == 0)
+        {
+            callback(DIGITAL_READ_EVENT, pin.pin, s);
+        }
+        else if(pin.triggerComplete == 0)
+        {
+            pin.triggerComplete = micros() + pin.debounceTime;
+        }
+        else
+        {
+            if (pin.triggerComplete < micros())
             {
-                if (pins_[pin].debounceTime == 0)
+                int s = ::digitalRead(pin.pin);
+                if (s != pin.currentState)
                 {
-                    int val = pin;
-                    if (s == HIGH)
-                        val = val | 0x100;
-                    callback(DIGITAL_READ_EVENT, val);
-                }
-                else if(pins_[pin].triggerComplete == 0)
-                {
-                    pins_[pin].triggerComplete = micros() + pins_[pin].debounceTime;
-                }
-                else
-                {
-                    if (pins_[pin].triggerComplete < micros())
-                    {
-                        int s = ::digitalRead(pin);
-                        if (s != pins_[pin].currentState)
-                        {
-                            pins_[pin].currentState = s;
-                            int val = pin;
-                            if (s == HIGH)
-                                val = val | 0x100;
-                            callback(DIGITAL_READ_EVENT, val);
-                            pins_[pin].triggerComplete = 0;
-                        }
-                    }
+                    pin.currentState = s;
+                    callback(DIGITAL_READ_EVENT, pin.pin, s);
+                    pin.triggerComplete = 0;
                 }
             }
         }
     }
 }
 
-int message_queue_pin(int eventValue)
+void MessageQueue::analog_check(Pin& pin)
 {
-    return eventValue & 0xff;
+    if (pin.debounceTime == 0)
+    {
+        int v = ::analogRead(pin.pin);
+
+        callback(ANALOG_READ_EVENT, pin.pin, v);
+        return;
+    }
+    if (pin.triggerComplete == 0)
+    {
+        pin.triggerComplete = micros() + pin.debounceTime;
+        return;
+    }
+
+    if (pin.triggerComplete < micros())
+    {
+        int v = ::analogRead(pin.pin);
+        callback(ANALOG_READ_EVENT, pin.pin, v);
+        pin.triggerComplete = micros() + pin.debounceTime;
+        return;
+    }
 }
 
-int message_queue_state(int eventValue)
-{
-    if (eventValue & 0x100)
-        return HIGH;
-    return LOW;
-}
