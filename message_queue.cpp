@@ -5,6 +5,7 @@ MessageQueue::MessageQueue()
 :consumer_(0)
 ,producer_(0)
 ,cb_(nullptr)
+, debug_(false)
 {
     for (int i = 0; i < MAX_MESSAGES;++i)
     {
@@ -45,6 +46,11 @@ void MessageQueue::register_event_handler(EVENT_CALLBACK cb)
     cb_ = cb;
 }
 
+EVENT_CALLBACK MessageQueue::get_event_handler()
+{
+    return cb_;
+}
+
 int MessageQueue::OnEvent(int msg, int arg1, int arg2)
 {
     return 0;
@@ -62,9 +68,10 @@ void MessageQueue::pump_message()
 {
     int msg, arg1, arg2;
     
-    while (get_message(msg, arg1, arg2))
+    if (get_message(msg, arg1, arg2))
     {
         callback(msg, arg1, arg2);
+        return;
     }
     callback(IDLE_EVENT, 0, 0);
     check_timers();
@@ -77,6 +84,14 @@ void MessageQueue::post_message(int msg, int arg1, int arg2)
     msg_queue_[producer_].arg1 = arg1;
     msg_queue_[producer_].arg2 = arg2;
     producer_ = (++producer_) & (MAX_MESSAGES-1);
+    if (producer_ == consumer_)
+    {
+        // If we just posted and reached the consumer_, our queue is full
+        // so advance the consumer and drop the message
+        ++consumer_;
+        if (debug_)
+            Serial.println("MessageQueue: Queue full, message dropped");
+    }
 }
 
 int MessageQueue::send_message(int msg, int arg1, int arg2)
@@ -130,6 +145,11 @@ bool MessageQueue::create_timer(int id, unsigned long interval, bool repeat)
             return true;
         }
     }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: create_timer() failed, id=");
+        Serial.println(id);
+    }
     return false;
 }
 
@@ -145,6 +165,11 @@ void MessageQueue::cancel_timer(int id)
             timers_[n].nextTrigger = 0;
             return;
         }
+    }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: cancel_timer() failed, id=");
+        Serial.println(id);
     }
 }
 
@@ -183,6 +208,11 @@ bool MessageQueue::digitalRead(int id, int pin, int def, unsigned long debounceT
             return true;
         }
     }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: digitalRead() failed, id=");
+        Serial.println(id);
+    }
     return false;
 }
 
@@ -200,6 +230,11 @@ bool MessageQueue::analogRead(int id, int pin, unsigned long timeMicros)
             pins_[i].triggerComplete = 0;
             return true;
         }
+    }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: analogRead() failed, id=");
+        Serial.println(id);
     }
     return false;
 
@@ -269,6 +304,11 @@ bool MessageQueue::create_value(int id, int v)
             return true;
         }
     }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: create_value() failed, id=");
+        Serial.println(id);
+    }
     return false;
 }
 
@@ -286,6 +326,11 @@ void MessageQueue::set_value(int id, int v)
             }
         }
     }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: set_value() failed, id=");
+        Serial.println(id);
+    }
 }
 
 int MessageQueue::get_value(int id, int v)
@@ -297,6 +342,7 @@ int MessageQueue::get_value(int id, int v)
             return values_[idx].value;
         }
     }
+    return -1;
 }
 
 void MessageQueue::toggle_value(int id)
@@ -309,6 +355,11 @@ void MessageQueue::toggle_value(int id)
             post_message(VALUE_EVENT, values_[idx].value, 0);
             return;
         }
+    }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: toggle_value() failed, id=");
+        Serial.println(id);
     }
 }
 

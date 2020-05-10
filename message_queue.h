@@ -43,6 +43,9 @@ public:
     // willl be called to be handled by a derived class
     void register_event_handler(EVENT_CALLBACK);
 
+    // Get the currently installed event handler.
+    EVENT_CALLBACK get_event_handler();
+
 
     // If no handler is registered, this virtual
     // function will be called to be implemented in a derived class
@@ -124,6 +127,9 @@ public:
     // Toggle a value. Treats the value as a boolean, toggles between
     // 1 and 0. A VALUE_EVENT message will be posted.
     void toggle_value(int id);
+
+    // Enable printing to the monitor for debugging
+    void setDebug();
 private:
     void check_timers();
     void check_pins();
@@ -137,6 +143,7 @@ private:
     unsigned int consumer_;
     unsigned int producer_;
     EVENT_CALLBACK cb_;
+    bool debug_;
 };
 
 
