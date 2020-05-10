@@ -187,7 +187,6 @@ void TimerApp::OnSwitchHookDown()
     }
 }
 
-// EVENT_MSG_KEY
 int TimerApp::OnKey(int character)
 {
     if (character == 'R')
@@ -293,7 +292,12 @@ int TimerApp::OnTimerEvent(int event_timerno)
 // IDLE_EVENT
 int TimerApp::OnIdleEvent()
 {
-    return 0;
+    char c;
+    // Do we have any input to deal with?
+    if (read_keypad(c))
+    {
+        OnKey(c);
+    }
 }
 
 int TimerApp::OnUnknown(int msg, int arg)
@@ -358,14 +362,6 @@ void TimerApp::read_keypad_ungetc(char c)
 
 void TimerApp::loop()
 {
-    char c;
-    // Do we have any input to deal with?
-    if (read_keypad(c))
-    {
-        //printMessage("read_keypad", msg, arg);
-        messageQueue_.post_message(EVENT_MSG_KEY, (int)c, 0);
-    }
-
     // Pump a message into our message_proc 
     messageQueue_.pump_message();
 
@@ -379,8 +375,6 @@ int event_handler(int msg, int arg1, int arg2)
     //pTimerApp->printMessage("message_proc", msg, arg);
     switch (msg)
     {
-    case EVENT_MSG_KEY:
-        return pTimerApp->OnKey((char)arg1);
     case TIMER_EVENT:
         return pTimerApp->OnTimerEvent(arg1);
     case IDLE_EVENT:
@@ -399,9 +393,6 @@ void TimerApp::printMessage(char *text, int msg, int arg)
     {
     case NULL_EVENT:
         sprintf(buf, "%s: msg: NULL_EVENT, arg: %d", text, arg);
-        break;
-    case EVENT_MSG_KEY:
-        sprintf(buf, "%s: msg: MSG_KEY, arg: %c", text, (char)arg);
         break;
     case TIMER_EVENT:
         sprintf(buf, "%s: msg: TIMER_EVENT, arg: %d", text, arg);

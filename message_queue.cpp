@@ -57,15 +57,14 @@ int MessageQueue::callback(int msg, int arg1, int arg2)
 void MessageQueue::pump_message()
 {
     int msg, arg1, arg2;
-    check_timers();
-    check_pins();
-    if (get_message(msg, arg1, arg2))
+    
+    while (get_message(msg, arg1, arg2))
     {
         callback(msg, arg1, arg2);
-        return;
     }
-    else
-        callback(IDLE_EVENT, 0, 0);
+    callback(IDLE_EVENT, 0, 0);
+    check_timers();
+    check_pins();
 }
 
 void MessageQueue::post_message(int msg, int arg1, int arg2)
@@ -155,7 +154,7 @@ void MessageQueue::check_timers()
         {
             if (timer.nextTrigger < now)
             {
-                callback(TIMER_EVENT, timer.id, 0);
+                post_message(TIMER_EVENT, timer.id, 0);
                 if (timer.repeat)
                     timer.nextTrigger = now + timer.interval;
                 else
@@ -223,7 +222,7 @@ void MessageQueue::digital_check(Pin& pin)
     {
         if (pin.debounceTime == 0)
         {
-            callback(DIGITAL_READ_EVENT, pin.pin, s);
+            post_message(DIGITAL_READ_EVENT, pin.pin, s);
         }
         else if(pin.triggerComplete == 0)
         {
@@ -237,8 +236,8 @@ void MessageQueue::digital_check(Pin& pin)
                 if (s != pin.currentState)
                 {
                     pin.currentState = s;
-                    callback(DIGITAL_READ_EVENT, pin.pin, s);
                     pin.triggerComplete = 0;
+                    post_message(DIGITAL_READ_EVENT, pin.pin, s);
                 }
             }
         }
@@ -251,21 +250,72 @@ void MessageQueue::analog_check(Pin& pin)
     {
         int v = ::analogRead(pin.pin);
 
-        callback(ANALOG_READ_EVENT, pin.pin, v);
-        return;
+        post_message(ANALOG_READ_EVENT, pin.pin, v);
     }
     if (pin.triggerComplete == 0)
     {
         pin.triggerComplete = micros() + pin.debounceTime;
-        return;
     }
 
     if (pin.triggerComplete < micros())
     {
         int v = ::analogRead(pin.pin);
-        callback(ANALOG_READ_EVENT, pin.pin, v);
         pin.triggerComplete = micros() + pin.debounceTime;
-        return;
+        post_message(ANALOG_READ_EVENT, pin.pin, v);
+    }
+}
+
+bool MessageQueue::create_value(int id, int v)
+{
+    for (size_t idx = 0; idx < MAX_VALUES; idx++)
+    {
+        if (values_[idx].id == 0)
+        {
+            values_[idx].id = id;
+            values_[idx].value = v;
+            return true;
+        }
+    }
+    return false;
+}
+
+void MessageQueue::set_value(int id, int v)
+{
+    for (size_t idx = 0; idx < MAX_VALUES; idx++)
+    {
+        if (values_[idx].id == id)
+        {
+            if (values_[idx].value != v)
+            {
+                values_[idx].value = v;
+                post_message(VALUE_EVENT, v, 0);
+                return;
+            }
+        }
+    }
+}
+
+int MessageQueue::get_value(int id, int v)
+{
+    for (size_t idx = 0; idx < MAX_VALUES; idx++)
+    {
+        if (values_[idx].id == id)
+        {
+            return values_[idx].value;
+        }
+    }
+}
+
+void MessageQueue::toggle_value(int id)
+{
+    for (size_t idx = 0; idx < MAX_VALUES; idx++)
+    {
+        if (values_[idx].id == id)
+        {
+            values_[idx].value = values_[idx].value;
+            post_message(VALUE_EVENT, values_[idx].value, 0);
+            return;
+        }
     }
 }
 

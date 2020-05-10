@@ -33,13 +33,6 @@ static const int KS_ROW_2 = 1;
 static const int KS_ROW_3 = 2;
 static const int KS_ROW_4 = 3;
 
-enum Events
-{
-    // There is a key press
-    // arg: the character pressed
-    EVENT_MSG_KEY
-};
-
 
 /*********************************************
  * timer functions

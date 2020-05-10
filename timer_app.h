@@ -2,7 +2,7 @@
 #define TIMER_APP_H_
 
 #include "application.h"
-#include "interval_timer.h"
+//#include "interval_timer.h"
 #include "message_queue.h"
 
 struct TimerApp : public Application
@@ -36,8 +36,6 @@ struct TimerApp : public Application
     bool readSwitchHookImpl(bool hookUp);
     bool read_keypad(char& c);
 
-    // push back one character to be returned by read_keypad()
-    // as a EVENT_MSG_KEY
     void read_keypad_ungetc(char c);
 
     // Debug helper

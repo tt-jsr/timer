@@ -1,8 +1,10 @@
 #ifndef MESSAGE_QUEUE_H_
 #define MESSAGE_QUEUE_H_
 
+#include "message_queue_impl.h"
+
 // Each queue slot takes 6 bytes
-#define MAX_MESSAGES 8 // must be a power of two
+#define MAX_MESSAGES 16 // must be a power of two
 
 // Each timer consumes 12 bytes
 #define MAX_TIMERS   5
@@ -11,38 +13,8 @@
 // Set to the number of pins you will use
 #define MAX_PINS     4
 
-struct Message
-{
-    int msg_type;
-    int arg1;
-    int arg2;
-};
+#define MAX_VALUES   5
 
-struct Timer
-{
-    unsigned long interval;
-    unsigned long nextTrigger;
-    bool repeat;
-    int id;
-};
-
-struct Pin
-{
-    int pin;
-    bool digitalRead;
-    bool enabled;
-    bool currentState;  // for digital read only
-    unsigned long  debounceTime;  
-    unsigned long  triggerComplete;    
-};
-
-const int NULL_EVENT = 32000;
-const int IDLE_EVENT = 32001;
-const int TIMER_EVENT = 32002;
-const int DIGITAL_READ_EVENT = 32003;
-const int ANALOG_READ_EVENT = 32004;
-
-typedef int (*EVENT_CALLBACK)(int, int, int);
 class MessageQueue
 {
 public:
@@ -77,7 +49,8 @@ public:
     // of any queued messages
     int send_message(int msg, int arg1, int arg2);
 
-    // Get and remove a message from the queue
+    // Get and remove a message from the queue. Normally you will not
+    // call this as pump_message() will do this for you
     bool get_message(int& msg, int& arg1, int& arg2);
 
     // Get a message without removing it from the queue
@@ -87,9 +60,12 @@ public:
     bool empty();
 
     // Must be called periodically to invoke the callback
-    // with posted messages. If the queue is empty
-    // IDLE_EVENT is placed on the callback if the app
-    // needs to do any processing during idle times.
+    // with posted messages. 
+    // This function does the following things:
+    // 1. Process all messages currently in the queue, if any.
+    // 2. Invoke the callback with IDLE_EVENT. This will 
+    //    always be called.
+    // 3. Post any timer, digital or analog read events to the queue.
     void pump_message();
 
     /****************************************************************
@@ -119,6 +95,19 @@ public:
     // timeMicros: set to 0 to post an event on every call to the message_pump(),
     // otherwise, post a read every timeMicros microseconds
     bool analogRead(int pin, unsigned long timeMicros);
+
+    // Create a value that when changed, generates a VAUE_EVENT message
+    bool create_value(int id, int v);
+
+    // Set a value
+    void set_value(int id, int v);
+
+    // Get the current value
+    int get_value(int id, int v);
+
+    // Toggle a value. Treats the value as a boolean, toggles between
+    // 1 and 0
+    void toggle_value(int id);
 private:
     void check_timers();
     void check_pins();
@@ -128,8 +117,9 @@ private:
     Message msg_queue_[MAX_MESSAGES];
     Pin pins_[MAX_PINS];
     Timer timers_[MAX_TIMERS];
-    int consumer_;
-    int producer_;
+    Value values_[MAX_VALUES];
+    unsigned int consumer_;
+    unsigned int producer_;
     EVENT_CALLBACK cb_;
 };
 
