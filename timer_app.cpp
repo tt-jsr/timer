@@ -8,9 +8,14 @@
 #include "test.h"
 #include "timer_app.h"
 
+static const int BUZZER_TIMER = 1;
+static const int DRAW_TIMER = 2;
+static const int CHECK_TIMERS = 3;
+static const int BUZZER_STATE = 4;
+static const int HOOK_STATE = 5;
+
 TimerApp::TimerApp()
 :currentTimer_(timer_ns::TIMER_INVALID)
-,buzzerOn_(false)
 ,buzzerRunning_(false)
 ,hookUp_(false)
 ,recordingTimer_(timer_ns::TIMER_INVALID)
@@ -67,10 +72,6 @@ int TimerApp::inputTime(char c)
     }
 }
 
-static const int BUZZER_TIMER = 1;
-static const int DRAW_TIMER = 2;
-static const int CHECK_TIMERS = 3;
-
 int TimerApp::CreateNewTimer(char character)
 {
     int secs = inputTime(character);
@@ -93,8 +94,8 @@ void TimerApp::CancelTimer(int timerno)
 {
     timer_ns::clearTimer(timerno);
     currentTimer_ = timer_ns::nextRunningTimer();
-    noTone(BUZZER);
     messageQueue_.cancel_timer(BUZZER_TIMER);
+    messageQueue_.set_value(BUZZER_STATE, false);
     buzzerRunning_ = false;
 }
 
@@ -103,8 +104,7 @@ void TimerApp::TimerExpired(int timerno)
     if (!buzzerRunning_)
     {
         messageQueue_.create_timer(BUZZER_TIMER, 500, true);
-        tone(BUZZER, 1000);
-        buzzerOn_ = true;
+        messageQueue_.set_value(BUZZER_STATE, true);
         buzzerRunning_ = true;
     }
 }
@@ -143,19 +143,6 @@ void TimerApp::DrawTimer()
     {
         display_ns::showNoTimers();
     }
-}
-
-// DIGITAL_READ_EVENT
-int TimerApp::OnDigitalRead(int pin, int state)
-{
-    if (pin == HOOK)
-    {
-        if (state == LOW)
-            OnSwitchHookUp();
-        else
-            OnSwitchHookDown();
-    }
-    return 0;
 }
 
 void TimerApp::OnSwitchHookUp()
@@ -262,6 +249,27 @@ void TimerApp::CheckForExpiredTimers()
     }
 }
 
+// VALUE_EVENT
+int TimerApp::OnValueEvent(int id, int value)
+{
+    switch (id)
+    {
+        case BUZZER_STATE:
+            if (value == 0)
+                noTone(PIN_BUZZER);
+            else
+                tone(PIN_BUZZER, 1000);
+            break;
+        case HOOK_STATE:
+        {
+            if (value == LOW)
+                OnSwitchHookUp();
+            else
+                OnSwitchHookDown();
+        }
+    }
+}
+
 // TIMER_EVENT
 // This is an event timer, not a application timer
 // See TimerExpired for application timers
@@ -269,11 +277,7 @@ int TimerApp::OnTimerEvent(int event_timerno)
 {
     if (event_timerno == BUZZER_TIMER)
     {
-        if (buzzerOn_)
-            noTone(BUZZER);
-        else
-            tone(BUZZER, 1000);
-        buzzerOn_ = !buzzerOn_;
+        messageQueue_.toggle_value(BUZZER_STATE);
     }
 
     if (event_timerno == DRAW_TIMER)
@@ -328,11 +332,11 @@ int TimerApp::readSwitchHook()
 
 bool TimerApp::readSwitchHookImpl(bool hookUp)
 {
-     bool state = digitalRead(HOOK) == LOW;
+     bool state = digitalRead(PIN_HOOK) == LOW;
      if (hookUp != state)
      {
         delay(1);
-        bool r = digitalRead(HOOK) == LOW;
+        bool r = digitalRead(PIN_HOOK) == LOW;
         return r;
      }
      return hookUp;
@@ -379,8 +383,8 @@ int event_handler(int msg, int arg1, int arg2)
         return pTimerApp->OnTimerEvent(arg1);
     case IDLE_EVENT:
         return pTimerApp->OnIdleEvent();
-    case DIGITAL_READ_EVENT:
-        return pTimerApp->OnDigitalRead(arg1, arg2);
+    case VALUE_EVENT:
+        return pTimerApp->OnValueEvent(arg1, arg2);
     default:
         return pTimerApp->OnUnknown(msg, arg1);
     }
@@ -400,8 +404,8 @@ void TimerApp::printMessage(char *text, int msg, int arg)
     case IDLE_EVENT:
         sprintf(buf, "%s: msg: IDLE_EVENT, arg: %d", text, arg);
         break;
-    case DIGITAL_READ_EVENT:
-        sprintf(buf, "%s: msg: DIGITAL_READ_EVENT, arg: %d", text, arg);
+    case VALUE_EVENT:
+        sprintf(buf, "%s: msg: VALUE_EVENT, arg: %d", text, arg);
         break;
     default:
         sprintf(buf, "%s: msg: %d, arg: %d", text, msg, arg);
@@ -415,8 +419,9 @@ void TimerApp::setup()
     display_ns::display.clearDisplay();
     display_ns::showNoTimers();
     hookUp_ = false;
-    messageQueue_.digitalRead(HOOK, HIGH, 500);
+    messageQueue_.digitalRead(HOOK_STATE, PIN_HOOK, HIGH, 500);
     messageQueue_.create_timer(DRAW_TIMER, 500, true);
     messageQueue_.create_timer(CHECK_TIMERS, 500, true);
+    messageQueue_.create_value(BUZZER_STATE, false);
 }
 

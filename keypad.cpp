@@ -27,14 +27,14 @@ namespace keypad_ns
 
     void setCol(int col)
     {
-        digitalWrite(SRCLR, LOW);
-        digitalWrite(SRCLR, HIGH);
+        digitalWrite(PIN_SRCLR, LOW);
+        digitalWrite(PIN_SRCLR, HIGH);
 
-        digitalWrite(RCLK, LOW);
-        shiftOut(SER_DATA, SRCLK, MSBFIRST, 1<< col);
+        digitalWrite(PIN_RCLK, LOW);
+        shiftOut(PIN_SER_DATA, PIN_SRCLK, MSBFIRST, 1<< col);
         
-        digitalWrite(RCLK, HIGH);
-        digitalWrite(RCLK, LOW);
+        digitalWrite(PIN_RCLK, HIGH);
+        digitalWrite(PIN_RCLK, LOW);
     }
 
     char keycode2char(KeyCode k)
@@ -55,16 +55,16 @@ namespace keypad_ns
                 switch (row)
                 {
                 case KS_ROW_1:
-                    pin = ROW_1;
+                    pin = PIN_ROW_1;
                     break;
                 case KS_ROW_2:
-                    pin = ROW_2;
+                    pin = PIN_ROW_2;
                     break;
                 case KS_ROW_3:
-                    pin = ROW_3;
+                    pin = PIN_ROW_3;
                     break;
                 case KS_ROW_4:
-                    pin = ROW_4;
+                    pin = PIN_ROW_4;
                     break;
                 }
                 if (HIGH == digitalRead(pin))
@@ -133,6 +133,6 @@ namespace keypad_ns
         keymap[KEY_STAR] = '*';
         keymap[KEY_REDIAL] = 'R';
 
-        digitalWrite(SRCLR, LOW);
+        digitalWrite(PIN_SRCLR, LOW);
     }
 }

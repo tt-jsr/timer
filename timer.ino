@@ -7,17 +7,17 @@ void setup()
 {
   Serial.begin(9600);
 
-  pinMode(ROW_1, INPUT);
-  pinMode(ROW_2, INPUT);
-  pinMode(ROW_3, INPUT);
-  pinMode(ROW_4, INPUT);
-  pinMode(SRCLK, OUTPUT);
-  pinMode(SER_DATA, OUTPUT);
-  pinMode(SRCLR, OUTPUT);
-  pinMode(RCLK, OUTPUT);
-  pinMode(AUDIO_CS, OUTPUT);
-  pinMode(BUZZER, OUTPUT);
-  pinMode(HOOK, INPUT_PULLUP);
+  pinMode(PIN_ROW_1, INPUT);
+  pinMode(PIN_ROW_2, INPUT);
+  pinMode(PIN_ROW_3, INPUT);
+  pinMode(PIN_ROW_4, INPUT);
+  pinMode(PIN_SRCLK, OUTPUT);
+  pinMode(PIN_SER_DATA, OUTPUT);
+  pinMode(PIN_SRCLR, OUTPUT);
+  pinMode(PIN_RCLK, OUTPUT);
+  pinMode(PIN_AUDIO_CS, OUTPUT);
+  pinMode(PIN_BUZZER, OUTPUT);
+  pinMode(PIN_HOOK, INPUT_PULLUP);
 
   display_ns::setup();
   timer_ns::setup();

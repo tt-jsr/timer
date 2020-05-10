@@ -12,8 +12,8 @@ struct TimerApp : public Application
     // Event handlers
     int OnKey(int arg);
     int OnTimerEvent(int id);
-    int OnDigitalRead(int pin, int val);
     int OnIdleEvent();
+    int OnValueEvent(int id, int value);
     int OnUnknown(int msg, int arg);
 
     // Functions
@@ -47,7 +47,6 @@ struct TimerApp : public Application
 
 // data
     int currentTimer_;      // The current timerno being displayed
-    bool buzzerOn_;         // Buzzer is currently on
     bool buzzerRunning_;    // Buzzer is running. This means BUZZER timer event is running
     bool hookUp_;           // The swicth hok is up
     int recordingTimer_;    // The timer being recorded

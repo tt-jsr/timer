@@ -7,17 +7,17 @@
 #define PRINT2(a1, a2, a3) Serial.print(a1);Serial.print(a2);Serial.println(a3)
 
 // Assign pins
-static const int BUZZER = 2;
-static const int RCLK = 5;
-static const int SRCLR = 6;
-static const int HOOK = 9;
-static const int AUDIO_CS = 10;     // ISD1760
-static const int SRCLK = 14;
-static const int SER_DATA = 15;
-static const int ROW_1 = 16;
-static const int ROW_2 = 17;
-static const int ROW_3 = 20;
-static const int ROW_4  = 21;
+static const int PIN_BUZZER = 2;
+static const int PIN_RCLK = 5;
+static const int PIN_SRCLR = 6;
+static const int PIN_HOOK = 9;
+static const int PIN_AUDIO_CS = 10;     // ISD1760
+static const int PIN_SRCLK = 14;
+static const int PIN_SER_DATA = 15;
+static const int PIN_ROW_1 = 16;
+static const int PIN_ROW_2 = 17;
+static const int PIN_ROW_3 = 20;
+static const int PIN_ROW_4  = 21;
 
 // Bit to set the column in the shift register
 static const int KS_COL_1C1 = 0;

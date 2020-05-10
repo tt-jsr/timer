@@ -3,17 +3,29 @@
 
 #include "message_queue_impl.h"
 
+const int IDLE_EVENT = 32001;
+const int TIMER_EVENT = 32002;
+const int VALUE_EVENT = 32003;
+
 // Each queue slot takes 6 bytes
 #define MAX_MESSAGES 16 // must be a power of two
 
 // Each timer consumes 12 bytes
 #define MAX_TIMERS   5
 
-// Each pin consumes 16 bytes
-// Set to the number of pins you will use
+// Each pin consumes 18 bytes
+// Set to the number of pins you will use for the
+// message queue digitalRead() or analogRead() events. If you will be reading
+// pins directly and not using the queue, you do not need to include
+// them here.
 #define MAX_PINS     4
 
-#define MAX_VALUES   5
+// Set this to be the number of state
+// variables you will be using
+#define NUMBER_OF_VALUES    2
+
+
+#define MAX_VALUES   (MAX_PINS + NUMBER_OF_VALUES)
 
 class MessageQueue
 {
@@ -84,29 +96,33 @@ public:
      Reading pins
     ****************************************************************/
 
-    // Generate DIGITAL_READ_EVENT messages when this given pin
+    // Generate VALUE_EVENT messages when this given pin
     // changes state
     // def: LOW or HIGH
     // debounce: Time in microseconds to debounce the input. 
     //           Zero for no debounce
-    bool digitalRead(int pin, int def, unsigned long debounceTimeMicros);
+    bool digitalRead(int id, int pin, int def, unsigned long debounceTimeMicros);
 
-    // Generate ANALOG_READ_EVENT messages
+    // Generate VALUE_EVENT messages
     // timeMicros: set to 0 to post an event on every call to the message_pump(),
     // otherwise, post a read every timeMicros microseconds
-    bool analogRead(int pin, unsigned long timeMicros);
+    bool analogRead(int id, int pin, unsigned long timeMicros);
 
-    // Create a value that when changed, generates a VAUE_EVENT message
+    /***************************************************************
+     State variables
+    ***************************************************************/
+    // Create a value that when changed, generates a VALUE_EVENT message
     bool create_value(int id, int v);
 
-    // Set a value
+    // Set a value. If the vaue differs from the current value
+    // a VALUE_EVENT message willbe posted with the new value
     void set_value(int id, int v);
 
     // Get the current value
     int get_value(int id, int v);
 
     // Toggle a value. Treats the value as a boolean, toggles between
-    // 1 and 0
+    // 1 and 0. A VALUE_EVENT message will be posted.
     void toggle_value(int id);
 private:
     void check_timers();

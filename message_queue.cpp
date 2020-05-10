@@ -23,11 +23,15 @@ MessageQueue::MessageQueue()
 
     for (int i = 0; i < MAX_PINS; ++i)
     {
+        pins_[i].id = 0;
         pins_[i].pin = 0;
-        pins_[i].enabled = false;
-        pins_[i].currentState = LOW;
         pins_[i].debounceTime = 0;
         pins_[i].triggerComplete = 0;
+    }
+    for (int i = 0; i < MAX_VALUES; ++i)
+    {
+        values_[i].id = 0;
+        values_[i].value = 0;
     }
 }
 
@@ -164,16 +168,16 @@ void MessageQueue::check_timers()
     }
 }
 
-bool MessageQueue::digitalRead(int pin, int def, unsigned long debounceTimeMicros)
+bool MessageQueue::digitalRead(int id, int pin, int def, unsigned long debounceTimeMicros)
 {
     for (int i = 0; i < MAX_PINS; ++i)
     {
-        if (pins_[i].enabled == false)
+        if (pins_[i].id == 0)
         {
+            create_value(id, def);
+            pins_[i].id = id;
             pins_[i].pin = pin;
             pins_[i].digitalRead = true;
-            pins_[i].enabled = true;
-            pins_[i].currentState = def;
             pins_[i].debounceTime = debounceTimeMicros;
             pins_[i].triggerComplete = 0;
             return true;
@@ -182,16 +186,16 @@ bool MessageQueue::digitalRead(int pin, int def, unsigned long debounceTimeMicro
     return false;
 }
 
-bool MessageQueue::analogRead(int pin, unsigned long timeMicros)
+bool MessageQueue::analogRead(int id, int pin, unsigned long timeMicros)
 {
     for (int i = 0; i < MAX_PINS; ++i)
     {
-        if (pins_[i].enabled == false)
+        if (pins_[i].id == 0)
         {
+            create_value(id, 0);
+            pins_[i].id = id;
             pins_[i].pin = pin;
             pins_[i].digitalRead = false;
-            pins_[i].enabled = true;
-            pins_[i].currentState = LOW;
             pins_[i].debounceTime = timeMicros;
             pins_[i].triggerComplete = 0;
             return true;
@@ -205,7 +209,7 @@ void MessageQueue::check_pins()
 {
     for (int idx = 0; idx < MAX_PINS; idx++)
     {
-        if (pins_[idx].enabled)
+        if (pins_[idx].id)
         {
             if (pins_[idx].digitalRead)
                 digital_check(pins_[idx]);
@@ -218,29 +222,18 @@ void MessageQueue::check_pins()
 void MessageQueue::digital_check(Pin& pin)
 {
     int s = ::digitalRead(pin.pin);
-    if(pin.currentState != s)
+    if (pin.debounceTime == 0)
     {
-        if (pin.debounceTime == 0)
-        {
-            post_message(DIGITAL_READ_EVENT, pin.pin, s);
-        }
-        else if(pin.triggerComplete == 0)
-        {
-            pin.triggerComplete = micros() + pin.debounceTime;
-        }
-        else
-        {
-            if (pin.triggerComplete < micros())
-            {
-                int s = ::digitalRead(pin.pin);
-                if (s != pin.currentState)
-                {
-                    pin.currentState = s;
-                    pin.triggerComplete = 0;
-                    post_message(DIGITAL_READ_EVENT, pin.pin, s);
-                }
-            }
-        }
+        set_value(pin.id, s);
+    }
+    else if(pin.triggerComplete == 0)
+    {
+        pin.triggerComplete = micros() + pin.debounceTime;
+    }
+    else if (pin.triggerComplete < micros())
+    {
+        set_value(pin.id, s);
+        pin.triggerComplete = 0;
     }
 }
 
@@ -250,7 +243,7 @@ void MessageQueue::analog_check(Pin& pin)
     {
         int v = ::analogRead(pin.pin);
 
-        post_message(ANALOG_READ_EVENT, pin.pin, v);
+        set_value(pin.id, v);
     }
     if (pin.triggerComplete == 0)
     {
@@ -260,8 +253,8 @@ void MessageQueue::analog_check(Pin& pin)
     if (pin.triggerComplete < micros())
     {
         int v = ::analogRead(pin.pin);
+        set_value(pin.id, v);
         pin.triggerComplete = micros() + pin.debounceTime;
-        post_message(ANALOG_READ_EVENT, pin.pin, v);
     }
 }
 
