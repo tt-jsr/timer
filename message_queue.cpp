@@ -4,7 +4,6 @@
 MessageQueue::MessageQueue()
 :consumer_(0)
 ,producer_(0)
-,cb_(nullptr)
 , debug_(false)
 {
     for (int i = 0; i < MAX_MESSAGES;++i)
@@ -41,41 +40,17 @@ bool MessageQueue::empty()
     return consumer_ == producer_;
 }
 
-void MessageQueue::register_event_handler(EVENT_CALLBACK cb)
+void MessageQueue::get_message(int& msg, int& arg1, int& arg2)
 {
-    cb_ = cb;
-}
-
-EVENT_CALLBACK MessageQueue::get_event_handler()
-{
-    return cb_;
-}
-
-int MessageQueue::OnEvent(int msg, int arg1, int arg2)
-{
-    return 0;
-}
-
-int MessageQueue::callback(int msg, int arg1, int arg2)
-{
-    if (cb_)
-        return (*cb_)(msg, arg1, arg2);
-    else
-        return OnEvent(msg, arg1, arg2);
-}
-
-void MessageQueue::pump_message()
-{
-    int msg, arg1, arg2;
-    
-    if (get_message(msg, arg1, arg2))
-    {
-        callback(msg, arg1, arg2);
+    if (consume_message(msg, arg1, arg2))
         return;
-    }
-    callback(IDLE_EVENT, 0, 0);
+
+    OnGenerator();
     check_timers();
     check_pins();
+    msg = IDLE_EVENT;
+    arg1 = 0;
+    arg2 = 0;
 }
 
 void MessageQueue::post_message(int msg, int arg1, int arg2)
@@ -94,12 +69,7 @@ void MessageQueue::post_message(int msg, int arg1, int arg2)
     }
 }
 
-int MessageQueue::send_message(int msg, int arg1, int arg2)
-{
-    return callback(msg, arg1, arg2);
-}
-
-bool MessageQueue::get_message(int& msg, int& arg1, int& arg2)
+bool MessageQueue::consume_message(int& msg, int& arg1, int& arg2)
 {
     if (producer_ == consumer_)
     {
@@ -142,6 +112,11 @@ bool MessageQueue::create_timer(int id, unsigned long interval, bool repeat)
             timers_[n].id = id;
             timers_[n].repeat = repeat;
             timers_[n].nextTrigger = millis() + interval;
+            if (debug_)
+            {
+                Serial.print("MessageQueue: create_timer(), id=");
+                Serial.println(id);
+            }
             return true;
         }
     }
@@ -163,6 +138,11 @@ void MessageQueue::cancel_timer(int id)
             timers_[n].id = 0;
             timers_[n].repeat = false;
             timers_[n].nextTrigger = 0;
+            if (debug_)
+            {
+                Serial.print("MessageQueue: cancel_timer(), id=");
+                Serial.println(id);
+            }
             return;
         }
     }
@@ -199,12 +179,17 @@ bool MessageQueue::digitalRead(int id, int pin, int def, unsigned long debounceT
     {
         if (pins_[i].id == 0)
         {
-            create_value(id, def);
             pins_[i].id = id;
             pins_[i].pin = pin;
             pins_[i].digitalRead = true;
             pins_[i].debounceTime = debounceTimeMicros;
             pins_[i].triggerComplete = 0;
+            if (debug_)
+            {
+                Serial.print("MessageQueue: digitalRead(), id=");
+                Serial.println(id);
+            }
+            create_value(id, def);
             return true;
         }
     }
@@ -222,12 +207,17 @@ bool MessageQueue::analogRead(int id, int pin, unsigned long timeMicros)
     {
         if (pins_[i].id == 0)
         {
-            create_value(id, 0);
             pins_[i].id = id;
             pins_[i].pin = pin;
             pins_[i].digitalRead = false;
             pins_[i].debounceTime = timeMicros;
             pins_[i].triggerComplete = 0;
+            if (debug_)
+            {
+                Serial.print("MessageQueue: analogRead(), id=");
+                Serial.println(id);
+            }
+            create_value(id, 0);
             return true;
         }
     }
@@ -301,6 +291,11 @@ bool MessageQueue::create_value(int id, int v)
         {
             values_[idx].id = id;
             values_[idx].value = v;
+            if (debug_)
+            {
+                Serial.print("MessageQueue: create_value() success, id=");
+                Serial.println(id);
+            }
             return true;
         }
     }
@@ -321,9 +316,9 @@ void MessageQueue::set_value(int id, int v)
             if (values_[idx].value != v)
             {
                 values_[idx].value = v;
-                post_message(VALUE_EVENT, v, 0);
-                return;
+                post_message(VALUE_EVENT, id, v);
             }
+            return;
         }
     }
     if (debug_)
@@ -351,8 +346,8 @@ void MessageQueue::toggle_value(int id)
     {
         if (values_[idx].id == id)
         {
-            values_[idx].value = values_[idx].value;
-            post_message(VALUE_EVENT, values_[idx].value, 0);
+            values_[idx].value = !values_[idx].value;
+            post_message(VALUE_EVENT, id, values_[idx].value);
             return;
         }
     }
@@ -361,5 +356,14 @@ void MessageQueue::toggle_value(int id)
         Serial.print("MessageQueue: toggle_value() failed, id=");
         Serial.println(id);
     }
+}
+
+void MessageQueue::OnGenerator()
+{
+}
+
+void MessageQueue::setDebug(bool dbg)
+{
+    debug_ = dbg;
 }
 

@@ -19,12 +19,13 @@ void setup()
   pinMode(PIN_BUZZER, OUTPUT);
   pinMode(PIN_HOOK, INPUT_PULLUP);
 
-  display_ns::setup();
-  timer_ns::setup();
-  keypad_ns::setup();
-  audio_ns::setup();
+  bool debug = false;
+  display_ns::setup(debug);
+  timer_ns::setup(debug);
+  keypad_ns::setup(false);
+  audio_ns::setup(false);
 
-  pApp->setup();
+  pApp->setup(debug);
 }
 
     

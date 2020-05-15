@@ -68,8 +68,7 @@ namespace timer_ns
     // returns TIMER_INVALID if the timer is not valid
     int timeRemaining(int timerno);
 
-
-    void setup();
+    void setup(bool debug);
 }
 
 /********************************************
@@ -113,7 +112,7 @@ namespace display_ns
     // Display that there are no timers running
     void showNoTimers();
 
-    void setup();
+    void setup(bool debug);
 }
 
 /*******************************************
@@ -145,7 +144,7 @@ namespace keypad_ns
     // Returns immediately, does not block waiting for a keypress
     char getKeyPress();
 
-    void setup();
+    void setup(bool debug);
 }
 
 /******************************************
@@ -161,7 +160,7 @@ namespace audio_ns
     void playRingTone();
     bool isRecordingAvailable(int timerno);
 
-    void setup();
+    void setup(bool debug);
 }
 
 #endif TIMER_H_

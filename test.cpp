@@ -5,7 +5,7 @@
 #include "timer.h"
 #include "test.h"
 
-void TimerTest::setup()
+void TimerTest::setup(bool dbg)
 {
   display_ns::setSmallFont();
 
@@ -30,7 +30,7 @@ void TimerTest::loop()
 
 /*****************************************/
 
-void KeypadTest::setup()
+void KeypadTest::setup(bool dbg)
 {
     display_ns::setSmallFont();
     display_ns::display.setCursor(0,display_ns::TEXT_HEIGHT);

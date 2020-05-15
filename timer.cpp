@@ -6,6 +6,7 @@
 
 namespace timer_ns
 {
+    bool debug = false;
     struct Timer
     {
         int interval;
@@ -27,6 +28,11 @@ namespace timer_ns
                 timers[i].trigger = 0;
                 timers[i].running = false;
                 timers[i].recording_available = false;
+                if (debug)
+                {
+                    Serial.print("app timer created, secs: ");
+                    Serial.println(timeout);
+                }
                 return i;
             }
         }
@@ -43,6 +49,8 @@ namespace timer_ns
 
         timers[timerno].trigger = millis()/1000 + timers[timerno].interval;
         timers[timerno].running = true;
+        if (debug)
+            Serial.println("app timer started");
         return true;
     }
 
@@ -75,6 +83,8 @@ namespace timer_ns
        timers[timerno].trigger = 0;
        timers[timerno].running = 0;
        timers[timerno].recording_available = false;
+        if (debug)
+            Serial.println("app timer cleared");
     }
 
     /**************************************/
@@ -143,8 +153,9 @@ namespace timer_ns
     }
 
     /**************************************/
-    void setup() 
+    void setup(bool dbg) 
     {
+        debug = dbg;
         for (int i= 0; i < timer_ns::MAX_TIMERS; i++)
         {
             timers[i].interval = 0;

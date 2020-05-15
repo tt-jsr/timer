@@ -6,6 +6,8 @@
 const int IDLE_EVENT = 32001;
 const int TIMER_EVENT = 32002;
 const int VALUE_EVENT = 32003;
+const int USER_EVENT_BASE = 32004;
+
 
 // Each queue slot takes 6 bytes
 #define MAX_MESSAGES 16 // must be a power of two
@@ -15,9 +17,10 @@ const int VALUE_EVENT = 32003;
 
 // Each pin consumes 18 bytes
 // Set to the number of pins you will use for the
-// message queue digitalRead() or analogRead() events. If you will be reading
-// pins directly and not using the queue, you do not need to include
-// them here.
+// message queue digitalRead() or analogRead() events. Do not set this
+// to the number of pins supported by your board.
+// If you will be reading pins directly and not using the queue, you 
+// do not need to include them here.
 #define MAX_PINS     4
 
 // Set this to be the number of state
@@ -32,24 +35,10 @@ class MessageQueue
 public:
     MessageQueue();
 
-    /************************************************************
-     Callbacks
-    ************************************************************/
-
-    // Regster an event handler to receive events. It must have a signiture of
-    // int foo(int msg, int arg1, int arg2);
-    //
-    // If no callback is registered the virtual function OnEvent()
-    // willl be called to be handled by a derived class
-    void register_event_handler(EVENT_CALLBACK);
-
-    // Get the currently installed event handler.
-    EVENT_CALLBACK get_event_handler();
-
-
-    // If no handler is registered, this virtual
-    // function will be called to be implemented in a derived class
-    virtual int OnEvent(int msg, int arg1, int arg2);
+    // Override if the application would like to be able to generate
+    // events. This can be useful for the override to post keypresses
+    // any other events into the message_pump
+    virtual void OnGenerator();
 
     /*************************************************************
      Message and queing
@@ -58,36 +47,29 @@ public:
     // Post a message to the queue
     void post_message(int msg, int arg1, int arg2);
 
-    // Send a message to the event handler synchronously.
-    // The return value is the return value of the handler
-    // This call bypasses the queue and will be executed ahead
-    // of any queued messages
-    int send_message(int msg, int arg1, int arg2);
-
-    // Get and remove a message from the queue. Normally you will not
-    // call this as pump_message() will do this for you
-    bool get_message(int& msg, int& arg1, int& arg2);
-
-    // Get a message without removing it from the queue
-    bool peek_message(int& msg, int& arg, int& arg2);
-
     // Is the queue empty?
     bool empty();
 
-    // Must be called periodically to invoke the callback
-    // with posted messages. 
-    // This function does the following things:
-    // 1. Process all messages currently in the queue, if any.
-    // 2. Invoke the callback with IDLE_EVENT. This will 
-    //    always be called.
-    // 3. Post any timer, digital or analog read events to the queue.
-    void pump_message();
+    // Get and remove a message from the queue. 
+    // If there is no message in the queue, check timers and pins
+    // and post events, then return an IDLE_EVENT.
+    //
+    // This call will always return either a queued message, or IDLE_EVENT
+    void get_message(int& msg, int& arg1, int& arg2);
+
+
+    // Get a message from the queue. This does not check timers or pins
+    // and does not return any IDLE_EVENT
+    bool consume_message(int& msg, int& arg1, int& arg2);
+
+    // Get a message without removing it from the queue
+    bool peek_message(int& msg, int& arg, int& arg2);
 
     /****************************************************************
     Timers
     ****************************************************************/
 
-    // Create a timer. TIMER_EVENT will be posted to the callback
+    // Create a timer. TIMER_EVENT will be posted to the queue
     // with the id as an argument when the timer fires
     // Returns true if the timer is created
     bool create_timer(int id, unsigned long interval_ms, bool repeat);
@@ -118,7 +100,7 @@ public:
     bool create_value(int id, int v);
 
     // Set a value. If the vaue differs from the current value
-    // a VALUE_EVENT message willbe posted with the new value
+    // a VALUE_EVENT message will be posted with the new value
     void set_value(int id, int v);
 
     // Get the current value
@@ -129,20 +111,18 @@ public:
     void toggle_value(int id);
 
     // Enable printing to the monitor for debugging
-    void setDebug();
+    void setDebug(bool debug);
 private:
     void check_timers();
     void check_pins();
     void digital_check(Pin&);
     void analog_check(Pin&);
-    int callback(int msg, int arg1, int arg2);
     Message msg_queue_[MAX_MESSAGES];
     Pin pins_[MAX_PINS];
     Timer timers_[MAX_TIMERS];
     Value values_[MAX_VALUES];
     unsigned int consumer_;
     unsigned int producer_;
-    EVENT_CALLBACK cb_;
     bool debug_;
 };
 

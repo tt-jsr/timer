@@ -21,6 +21,7 @@
 
 namespace keypad_ns
 {
+    bool debug = false;
     bool  keyDown(false);
     KeyCode scanMap[KS_COL_2C3+1][KS_ROW_4+1];
     int keymap[15];
@@ -101,8 +102,9 @@ namespace keypad_ns
         return keycode2char(k);
     }
 
-    void setup()
+    void setup(bool dbg)
     {
+        debug = dbg;
         memset(scanMap, 0, sizeof(int)*KS_COL_2C3*KS_ROW_4);
         scanMap[KS_COL_2C1][KS_ROW_1] = KEY_1;
         scanMap[KS_COL_2C2][KS_ROW_1] = KEY_2;

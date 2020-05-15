@@ -10,14 +10,14 @@
 
 struct TimerTest : public Application
 {
-    void setup();
+    void setup(bool);
     void loop();
     int timerno_;
 };
 
 struct KeypadTest : public Application
 {
-    void setup();
+    void setup(bool);
     void loop();
 
     int nchar;

@@ -2,8 +2,15 @@
 #define TIMER_APP_H_
 
 #include "application.h"
-//#include "interval_timer.h"
 #include "message_queue.h"
+
+const int KEY_EVENT = USER_EVENT_BASE;
+const int SWITCH_HOOK_EVENT = USER_EVENT_BASE+1;
+
+struct AppMessageQueue : MessageQueue
+{
+    void OnGenerator();
+};
 
 struct TimerApp : public Application
 {
@@ -13,22 +20,23 @@ struct TimerApp : public Application
     int OnKey(int arg);
     int OnTimerEvent(int id);
     int OnIdleEvent();
-    int OnValueEvent(int id, int value);
-    int OnUnknown(int msg, int arg);
+    int OnUnknown(int msg, int arg1, int arg2);
+    int OnCheckForExpiredTimers();
+    int OnDrawTimer();
+    int OnBuzzerTimer();
+    int OnBuzzerStateChange(int value);
 
     // Functions
     int CreateNewTimer(char c);
     void CancelTimer(int timerno);
-    void TimerExpired(int timerno);
     void SwitchToTimer(int timerno);
-    void DrawTimer();
     void PlayMessage(int timerno);
     void StopPlayingMessage(int timerno);
     void StartRecording(int timerno);
     void StopRecording(int timerno);
-    void CheckForExpiredTimers();
     void OnSwitchHookUp();
     void OnSwitchHookDown();
+    void TimerExpired(int t);
 
 
     // Read hardware inputs
@@ -39,10 +47,10 @@ struct TimerApp : public Application
     void read_keypad_ungetc(char c);
 
     // Debug helper
-    void printMessage(char *text, int msg, int arg);
+    void printMessage(char *text, int msg, int arg1, int arg2);
 
     void loop();
-    void setup();
+    void setup(bool debug);
     int inputTime(char c);
 
 // data
@@ -52,7 +60,8 @@ struct TimerApp : public Application
     int recordingTimer_;    // The timer being recorded
     int playingTimer_;      // The timer being played
     char ungetc_;           
-    MessageQueue messageQueue_;
+    AppMessageQueue messageQueue_;
+    bool debug_;
 };
 
 #endif

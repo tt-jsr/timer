@@ -3,6 +3,8 @@
 
 namespace audio_ns
 {
+    bool debug = false;
+
     bool HasRecording[timer_ns::MAX_TIMERS];
 
     int startRecording(int timerno)
@@ -50,8 +52,9 @@ namespace audio_ns
         return HasRecording[timerno];
     }
 
-    void setup() 
+    void setup(bool dbg) 
     {
+        debug = dbg;
         for (int i = 0; i < timer_ns::MAX_TIMERS; i++)
         {
             HasRecording[i] = false;

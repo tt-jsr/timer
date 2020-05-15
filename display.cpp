@@ -6,6 +6,7 @@
 
 namespace display_ns
 {
+    bool debug = false;
     int TEXT_HEIGHT = 0;
     int TIMER_X = 0;
     int TIMER_Y = 0;
@@ -50,11 +51,11 @@ namespace display_ns
     {
       char buf[64];
 
-#if defined(MONITOR)
-      snprintf(buf, sizeof(buf), "Timer %d = %d secs remaining\n", timerno, secs);
-      Serial.print(buf);
-#endif
-
+      if (debug)
+      {
+          snprintf(buf, sizeof(buf), "Timer %d = %d secs remaining\n", timerno, secs);
+          Serial.print(buf);
+      }
       secs = -secs;
       int hours = secs/3600;
       secs = secs - hours*3600;
@@ -62,7 +63,8 @@ namespace display_ns
       secs = secs - min*60;
 
       bool recording = audio_ns::isRecordingAvailable(timerno);
-      PRINT1("has recording: ", recording);
+      if(debug)
+        PRINT1("has recording: ", recording);
       char *rec = "";
       if (recording)
           rec = "(Rec)";
@@ -127,7 +129,9 @@ namespace display_ns
         display.setCursor(0, TEXT_HEIGHT);
     }
 
-    void setup() {
+    void setup(bool dbg) {
+      debug = dbg;
+
       // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
       if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
         Serial.println(F("SSD1306 allocation failed"));
