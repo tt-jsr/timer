@@ -31,8 +31,4 @@ struct Value
     int value;
 };
 
-const int NULL_EVENT = 32000;
-
-typedef int (*EVENT_CALLBACK)(int, int, int);
-
 #endif

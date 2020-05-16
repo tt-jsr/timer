@@ -37,7 +37,7 @@ public:
 
     // Override if the application would like to be able to generate
     // events. This can be useful for the override to post keypresses
-    // any other events into the message_pump
+    // any other events into the queue
     virtual void OnGenerator();
 
     /*************************************************************
@@ -51,8 +51,10 @@ public:
     bool empty();
 
     // Get and remove a message from the queue. 
-    // If there is no message in the queue, check timers and pins
-    // and post events, then return an IDLE_EVENT.
+    // If there is no message in the queue, timers will be 
+    // checked and pins will be read with the corrosponding
+    // timer events and value events posted to the queue
+    // then it will return an IDLE_EVENT.
     //
     // This call will always return either a queued message, or IDLE_EVENT
     void get_message(int& msg, int& arg1, int& arg2);

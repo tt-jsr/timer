@@ -376,9 +376,6 @@ void TimerApp::printMessage(char *text, int msg, int arg1, int arg2)
     buf[0] = '\0';
     switch (msg)
     {
-    case NULL_EVENT:
-        sprintf(buf, "%s: msg: NULL_EVENT, arg: %d", text, arg1);
-        break;
     case TIMER_EVENT:
         //sprintf(buf, "%s: msg: TIMER_EVENT, id: %d", text, arg1);
         break;

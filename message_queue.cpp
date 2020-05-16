@@ -8,7 +8,7 @@ MessageQueue::MessageQueue()
 {
     for (int i = 0; i < MAX_MESSAGES;++i)
     {
-        msg_queue_[i].msg_type = NULL_EVENT;
+        msg_queue_[i].msg_type = 0;
         msg_queue_[i].arg1 = 0;
         msg_queue_[i].arg2 = 0;
     }
@@ -73,7 +73,7 @@ bool MessageQueue::consume_message(int& msg, int& arg1, int& arg2)
 {
     if (producer_ == consumer_)
     {
-        msg_queue_[consumer_].msg_type = NULL_EVENT;
+        msg_queue_[consumer_].msg_type = 0;
         msg_queue_[consumer_].arg1 = 0;
         msg_queue_[consumer_].arg2 = 0;
         return false;
@@ -90,7 +90,7 @@ bool MessageQueue::peek_message(int& msg, int& arg1, int& arg2)
 {
     if (producer_ == consumer_)
     {
-        msg_queue_[consumer_].msg_type = NULL_EVENT;
+        msg_queue_[consumer_].msg_type = 0;
         msg_queue_[consumer_].arg1 = 0;
         msg_queue_[consumer_].arg2 = 0;
         return false;
