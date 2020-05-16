@@ -5,6 +5,20 @@
 #include "message_queue.h"
 
 const int KEY_EVENT = USER_EVENT_BASE;
+// id's
+static const int BUZZER_TIMER = 1;
+static const int DRAW_TIMER = 2;
+static const int CHECK_TIMERS = 3;
+static const int BUZZER_STATE = 4;
+static const int HOOK_STATE = 5;
+
+// HOOK_STATE Values
+static const int SWITCH_HOOK_UP = LOW;
+static const int SWITCH_HOOK_DOWN = HIGH;
+
+// BUZZER_STATE values
+static const int TURN_BUZZER_ON = 1;
+static const int TURN_BUZZER_OFF = 0;
 
 struct AppMessageQueue : MessageQueue
 {
@@ -16,10 +30,11 @@ struct TimerApp : public Application
     TimerApp();
 
     // Event handlers
-    int OnKey(int arg);
-    int OnTimerEvent(int id);
-    int OnIdleEvent();
-    int OnUnknown(int msg, int arg1, int arg2);
+    void OnKeyEvent(char c);
+    void OnTimerEvent(int id);
+    void OnIdleEvent();
+    void OnValueEvent(int id, int value);
+    void OnUnknown(char *, int arg1, int arg2);
     int OnCheckForExpiredTimers();
     int OnDrawTimer();
     int OnBuzzerTimer();

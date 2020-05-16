@@ -8,13 +8,6 @@
 #include "test.h"
 #include "timer_app.h"
 
-static const int BUZZER_TIMER = 1;
-static const int DRAW_TIMER = 2;
-static const int CHECK_TIMERS = 3;
-static const int BUZZER_STATE = 4;
-static const int HOOK_STATE = 5;
-static const int SWITCH_HOOK_UP = LOW;
-static const int SWITCH_HOOK_DOWN = HIGH;
 
 TimerApp::TimerApp()
 :currentTimer_(timer_ns::TIMER_INVALID)
@@ -101,7 +94,7 @@ void TimerApp::CancelTimer(int timerno)
     timer_ns::clearTimer(timerno);
     currentTimer_ = timer_ns::nextRunningTimer();
     messageQueue_.cancel_timer(BUZZER_TIMER);
-    messageQueue_.set_value(BUZZER_STATE, false);
+    messageQueue_.set_value(BUZZER_STATE, TURN_BUZZER_OFF);
     buzzerRunning_ = false;
 }
 
@@ -110,7 +103,7 @@ void TimerApp::TimerExpired(int timerno)
     if (!buzzerRunning_)
     {
         messageQueue_.create_timer(BUZZER_TIMER, 500, true);
-        messageQueue_.set_value(BUZZER_STATE, true);
+        messageQueue_.set_value(BUZZER_STATE, TURN_BUZZER_ON);
         buzzerRunning_ = true;
     }
 }
@@ -185,32 +178,6 @@ void TimerApp::OnSwitchHookDown()
     }
 }
 
-// KEY_EVENT handler
-int TimerApp::OnKey(int character)
-{
-    if (character == 'R')
-    {
-        CancelTimer(currentTimer_);
-    }
-    if (character == '#')
-    {
-        if (timer_ns::isTimerExpired(currentTimer_))
-            CancelTimer(currentTimer_);
-        else
-            CreateNewTimer(0);
-    }
-    if (character >= '0' && character <= '9')
-    {
-        if (currentTimer_ == timer_ns::TIMER_INVALID)
-        {
-            CreateNewTimer(character);
-        }
-        else
-            SwitchToTimer(character - '0');
-    }
-
-    return 0;
-}
 
 void TimerApp::PlayMessage(int timerno)
 {
@@ -263,39 +230,30 @@ int TimerApp::OnCheckForExpiredTimers()
     return 0;
 }
 
-// VALUE_EVENT
 int TimerApp::OnBuzzerStateChange(int value)
 {
-    if (value == 0)
+    if (value == TURN_BUZZER_OFF)
         noTone(PIN_BUZZER);
     else
         tone(PIN_BUZZER, 1000);
 }
 
 
-// BUZZER_TIMER handler
 int TimerApp::OnBuzzerTimer()
 {
-    // Will cause OnBuzzerStateChange tobe called
+    // Will cause OnBuzzerStateChange to be called
     messageQueue_.toggle_value(BUZZER_STATE);
     return 0;
 }
 
-// IDLE_EVENT
-int TimerApp::OnIdleEvent()
+void TimerApp::OnUnknown(char *p, int arg1, int arg2)
 {
-}
-
-int TimerApp::OnUnknown(int msg, int arg1, int arg2)
-{
-    Serial.print("message_proc: unknown msg: ");
-    Serial.print(msg);
+    Serial.print("unknown msg: ");
+    Serial.print(p);
     Serial.print(" arg1: ");
     Serial.print(arg1);
     Serial.print(" arg2: ");
     Serial.println(arg2);
-
-    return 0;
 }
 
 
@@ -321,6 +279,65 @@ void TimerApp::read_keypad_ungetc(char c)
     ungetc_ = c;
 }
 
+void TimerApp::OnTimerEvent(int id)
+{
+    if (id == BUZZER_TIMER)
+        OnBuzzerTimer();
+    else if (id == DRAW_TIMER)
+        OnDrawTimer();
+    else if (id == CHECK_TIMERS)
+        OnCheckForExpiredTimers();
+    else
+        OnUnknown("OnTimerEvent", id, 0);
+}
+
+void TimerApp::OnKeyEvent(char character)
+{
+    if (character == 'R')
+    {
+        CancelTimer(currentTimer_);
+    }
+    if (character == '#')
+    {
+        if (timer_ns::isTimerExpired(currentTimer_))
+            CancelTimer(currentTimer_);
+        else
+            CreateNewTimer(0);
+    }
+    if (character >= '0' && character <= '9')
+    {
+        if (currentTimer_ == timer_ns::TIMER_INVALID)
+        {
+            CreateNewTimer(character);
+        }
+        else
+            SwitchToTimer(character - '0');
+    }
+}
+
+void TimerApp::OnValueEvent(int id, int value)
+{
+    switch (id)
+    {
+        case BUZZER_STATE:
+            OnBuzzerStateChange(value);
+            break;
+        case HOOK_STATE:
+            if (value == SWITCH_HOOK_UP)
+                OnSwitchHookUp();
+            if (value == SWITCH_HOOK_DOWN)
+                OnSwitchHookDown();
+            break;
+        default:
+            OnUnknown("OnValueEvent", id, value);
+            break;
+    }
+}
+
+void TimerApp::OnIdleEvent()
+{
+}
+
 void TimerApp::loop()
 {
     // Process a message from the queue
@@ -331,40 +348,23 @@ void TimerApp::loop()
     switch (msg)
     {
     case KEY_EVENT:
-        OnKey((char)arg1);
+        OnKeyEvent((char)arg1);
         break;
     case TIMER_EVENT:
-        if (arg1 == BUZZER_TIMER)
-            OnBuzzerTimer();
-        else if (arg1 == DRAW_TIMER)
-            OnDrawTimer();
-        else if (arg1 == CHECK_TIMERS)
-            OnCheckForExpiredTimers();
-        else
-            OnUnknown(msg, arg1, arg2);
+        OnTimerEvent(arg1);
         break;
     case IDLE_EVENT:
         OnIdleEvent();
         break;
     case VALUE_EVENT:
-        switch (arg1)
-        {
-            case BUZZER_STATE:
-                OnBuzzerStateChange(arg2);
-                break;
-            case HOOK_STATE:
-                if (arg2 == SWITCH_HOOK_UP)
-                    OnSwitchHookUp();
-                if (arg2 == SWITCH_HOOK_DOWN)
-                    OnSwitchHookDown();
-                break;
-            default:
-                OnUnknown(msg, arg1, arg2);
-                break;
-        }
+        OnValueEvent(arg1, arg2);
         break;
     default:
-        OnUnknown(msg, arg1, arg2);
+        {
+            char buf[32];
+            sprintf (buf, "%d", msg);
+            OnUnknown(buf, arg1, arg2);
+        }
         break;
     }
 
@@ -407,7 +407,7 @@ void TimerApp::setup(bool debug)
     messageQueue_.digitalRead(HOOK_STATE, PIN_HOOK, HIGH, 1000);
     messageQueue_.create_timer(DRAW_TIMER, 500, true);
     messageQueue_.create_timer(CHECK_TIMERS, 500, true);
-    messageQueue_.create_value(BUZZER_STATE, false);
+    messageQueue_.create_value(BUZZER_STATE, TURN_BUZZER_OFF);
 }
 
 /********************************************************************/
