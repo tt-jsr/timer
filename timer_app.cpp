@@ -13,11 +13,12 @@ static const int DRAW_TIMER = 2;
 static const int CHECK_TIMERS = 3;
 static const int BUZZER_STATE = 4;
 static const int HOOK_STATE = 5;
+static const int SWITCH_HOOK_UP = LOW;
+static const int SWITCH_HOOK_DOWN = HIGH;
 
 TimerApp::TimerApp()
 :currentTimer_(timer_ns::TIMER_INVALID)
 ,buzzerRunning_(false)
-,hookUp_(false)
 ,recordingTimer_(timer_ns::TIMER_INVALID)
 ,playingTimer_(timer_ns::TIMER_INVALID)
 ,ungetc_(0)
@@ -45,8 +46,8 @@ int TimerApp::inputTime(char c)
         //printMessage("inputTime", msg, arg1, arg2);
         switch (msg)
         {
-        case SWITCH_HOOK_EVENT:
-            if (arg1 == 0)  // switchhook is down
+        case VALUE_EVENT:
+            if (arg1 == HOOK_STATE && arg2 == SWITCH_HOOK_DOWN)
                 return tbuf.getSeconds();
             break;
         case KEY_EVENT:
@@ -85,7 +86,7 @@ int TimerApp::CreateNewTimer(char character)
     int timerno = timer_ns::createTimer(secs);
     if (timerno == timer_ns::TIMER_INVALID)
         return timer_ns::TIMER_INVALID;
-    if (hookUp_)
+    if (messageQueue_.get_value(HOOK_STATE) == SWITCH_HOOK_UP)
         StartRecording(timerno);
     else
     {
@@ -297,36 +298,6 @@ int TimerApp::OnUnknown(int msg, int arg1, int arg2)
     return 0;
 }
 
-// Returns 1 if the changed to up
-// -1 if changed to down
-// 0 if unchanged
-int TimerApp::readSwitchHook()
-{
-     bool b = readSwitchHookImpl(hookUp_);
-     if (!hookUp_ && b)
-     {
-         hookUp_= true;
-         return 1;
-     }
-     if (hookUp_ && !b)
-     {
-         hookUp_= false;
-         return -1;
-     }
-     return 0;
-}
-
-bool TimerApp::readSwitchHookImpl(bool hookUp)
-{
-     bool state = digitalRead(PIN_HOOK) == LOW;
-     if (hookUp != state)
-     {
-        delay(1);
-        bool r = digitalRead(PIN_HOOK) == LOW;
-        return r;
-     }
-     return hookUp;
-}
 
 // Read a keypress
 bool TimerApp::read_keypad(char& c)
@@ -362,12 +333,6 @@ void TimerApp::loop()
     case KEY_EVENT:
         OnKey((char)arg1);
         break;
-    case SWITCH_HOOK_EVENT:
-        if (arg1 == 1)
-            OnSwitchHookUp();
-        if (arg1 == 0)
-            OnSwitchHookDown();
-        break;
     case TIMER_EVENT:
         if (arg1 == BUZZER_TIMER)
             OnBuzzerTimer();
@@ -386,6 +351,12 @@ void TimerApp::loop()
         {
             case BUZZER_STATE:
                 OnBuzzerStateChange(arg2);
+                break;
+            case HOOK_STATE:
+                if (arg2 == SWITCH_HOOK_UP)
+                    OnSwitchHookUp();
+                if (arg2 == SWITCH_HOOK_DOWN)
+                    OnSwitchHookDown();
                 break;
             default:
                 OnUnknown(msg, arg1, arg2);
@@ -420,9 +391,6 @@ void TimerApp::printMessage(char *text, int msg, int arg1, int arg2)
     case KEY_EVENT:
         sprintf(buf, "%s: msg: KEY_EVENT, char: %c", text, arg1);
         break;
-    case SWITCH_HOOK_EVENT:
-        sprintf(buf, "%s: msg: SWITCH_HOOK_EVENT, arg: %d", text, arg1);
-        break;
     default:
         sprintf(buf, "%s: msg: %d, arg1: %d, arg2: %d", text, msg, arg1, arg2);
     }
@@ -433,11 +401,10 @@ void TimerApp::printMessage(char *text, int msg, int arg1, int arg2)
 void TimerApp::setup(bool debug)
 {
     debug_ = debug;
-    messageQueue_.setDebug(debug);
+    messageQueue_.setDebug(true);
     display_ns::display.clearDisplay();
     display_ns::showNoTimers();
-    hookUp_ = false;
-    //messageQueue_.digitalRead(HOOK_STATE, PIN_HOOK, HIGH, 500);
+    messageQueue_.digitalRead(HOOK_STATE, PIN_HOOK, HIGH, 1000);
     messageQueue_.create_timer(DRAW_TIMER, 500, true);
     messageQueue_.create_timer(CHECK_TIMERS, 500, true);
     messageQueue_.create_value(BUZZER_STATE, false);
@@ -456,9 +423,4 @@ void AppMessageQueue::OnGenerator()
     {
         post_message(KEY_EVENT, c, 0);
     }
-    int r  = pTimerApp->readSwitchHook();
-    if (r < 0)
-        post_message(SWITCH_HOOK_EVENT, 0, 0);
-    if (r > 0)
-        post_message(SWITCH_HOOK_EVENT, 1, 0);
 }

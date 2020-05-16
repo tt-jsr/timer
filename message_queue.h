@@ -104,7 +104,7 @@ public:
     void set_value(int id, int v);
 
     // Get the current value
-    int get_value(int id, int v);
+    int get_value(int id);
 
     // Toggle a value. Treats the value as a boolean, toggles between
     // 1 and 0. A VALUE_EVENT message will be posted.

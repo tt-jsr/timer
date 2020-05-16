@@ -328,7 +328,7 @@ void MessageQueue::set_value(int id, int v)
     }
 }
 
-int MessageQueue::get_value(int id, int v)
+int MessageQueue::get_value(int id)
 {
     for (size_t idx = 0; idx < MAX_VALUES; idx++)
     {

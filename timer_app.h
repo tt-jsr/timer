@@ -5,7 +5,6 @@
 #include "message_queue.h"
 
 const int KEY_EVENT = USER_EVENT_BASE;
-const int SWITCH_HOOK_EVENT = USER_EVENT_BASE+1;
 
 struct AppMessageQueue : MessageQueue
 {
@@ -40,8 +39,6 @@ struct TimerApp : public Application
 
 
     // Read hardware inputs
-    int readSwitchHook();
-    bool readSwitchHookImpl(bool hookUp);
     bool read_keypad(char& c);
 
     void read_keypad_ungetc(char c);
@@ -56,7 +53,6 @@ struct TimerApp : public Application
 // data
     int currentTimer_;      // The current timerno being displayed
     bool buzzerRunning_;    // Buzzer is running. This means BUZZER timer event is running
-    bool hookUp_;           // The swicth hok is up
     int recordingTimer_;    // The timer being recorded
     int playingTimer_;      // The timer being played
     char ungetc_;           
