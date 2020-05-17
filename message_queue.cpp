@@ -153,6 +153,55 @@ void MessageQueue::cancel_timer(int id)
     }
 }
 
+void MessageQueue::reset_timer(int id, unsigned long interval, bool repeat)
+{
+    for (int n = 0; n < MAX_TIMERS; ++n)
+    {
+        if (timers_[n].id == id)
+        {
+            timers_[n].interval = interval;
+            timers_[n].repeat = repeat;
+            timers_[n].nextTrigger = millis() + timers_[n].interval;
+            if (debug_)
+            {
+                Serial.print("MessageQueue: reset_timer(id, interval, repeat), id=");
+                Serial.print(id);
+                Serial.print(" interval=");
+                Serial.print(interval);
+                Serial.print(" repeat=");
+                Serial.println(repeat);
+            }
+            return;
+        }
+    }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: reset_timer() failed, id=");
+        Serial.println(id);
+    }
+}
+
+void MessageQueue::reset_timer(int id)
+{
+    for (int n = 0; n < MAX_TIMERS; ++n)
+    {
+        if (timers_[n].id == id)
+        {
+            timers_[n].nextTrigger = millis() + timers_[n].interval;
+            if (debug_)
+            {
+                Serial.println("MessageQueue: reset_timer(), id=");
+            }
+            return;
+        }
+    }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: reset_timer() failed, id=");
+        Serial.println(id);
+    }
+}
+
 void MessageQueue::check_timers()
 {
     unsigned long now = millis();
@@ -161,13 +210,13 @@ void MessageQueue::check_timers()
         Timer& timer = timers_[n];
         if (timer.id)
         {
-            if (timer.nextTrigger < now)
+            if (timer.nextTrigger && timer.nextTrigger <= now)
             {
-                post_message(TIMER_EVENT, timer.id, 0);
+                post_message(TIMER_EVENT, timer.id, now-timer.nextTrigger);
                 if (timer.repeat)
                     timer.nextTrigger = now + timer.interval;
                 else
-                    cancel_timer(n);
+                    timer.nextTrigger = 0;
             }
         }
     }

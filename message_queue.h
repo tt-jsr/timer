@@ -37,7 +37,7 @@ public:
 
     // Override if the application would like to be able to generate
     // events. This can be useful for the override to post keypresses
-    // any other events into the queue
+    // or any other events into the queue
     virtual void OnGenerator();
 
     /*************************************************************
@@ -74,7 +74,21 @@ public:
     // Create a timer. TIMER_EVENT will be posted to the queue
     // with the id as an argument when the timer fires
     // Returns true if the timer is created
+    // msg:TIMER_EVENT
+    // arg1: id
+    // arg0: The number of milliseconds the timer is late from when 
+    //       it was supposed to fire
+    //
+    // A non repeating timer can be reset with reset_timer
     bool create_timer(int id, unsigned long interval_ms, bool repeat);
+
+    // Reset a timer.
+    // This can be used to reset a non repeating timer or
+    // modify any existing timer
+    void reset_timer(int id, unsigned long interval, bool repeat);
+
+    // Reset a timer
+    void reset_timer(int id);
 
     // Cancel a timer given the id
     void cancel_timer(int id);
@@ -88,11 +102,17 @@ public:
     // def: LOW or HIGH
     // debounce: Time in microseconds to debounce the input. 
     //           Zero for no debounce
+    // msg:VALUE_EVENT
+    // arg1: id
+    // arg2: HIGH or LOW
     bool digitalRead(int id, int pin, int def, unsigned long debounceTimeMicros);
 
     // Generate VALUE_EVENT messages
     // timeMicros: set to 0 to post an event on every call to the message_pump(),
     // otherwise, post a read every timeMicros microseconds
+    // msg: VALUE_EVENT
+    // arg1: id
+    // arg2: value read
     bool analogRead(int id, int pin, unsigned long timeMicros);
 
     /***************************************************************
@@ -103,6 +123,9 @@ public:
 
     // Set a value. If the vaue differs from the current value
     // a VALUE_EVENT message will be posted with the new value
+    // msg: VALUE_EVENT
+    // arg1: id
+    // arg2: new value
     void set_value(int id, int v);
 
     // Get the current value
@@ -110,6 +133,9 @@ public:
 
     // Toggle a value. Treats the value as a boolean, toggles between
     // 1 and 0. A VALUE_EVENT message will be posted.
+    // msg: VALUE_EVENT
+    // arg1:id
+    // arg2: 1 or 0
     void toggle_value(int id);
 
     // Enable printing to the monitor for debugging
