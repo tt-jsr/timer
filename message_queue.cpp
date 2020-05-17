@@ -202,6 +202,27 @@ void MessageQueue::reset_timer(int id)
     }
 }
 
+void MessageQueue::pause_timer(int id)
+{
+    for (int n = 0; n < MAX_TIMERS; ++n)
+    {
+        if (timers_[n].id == id)
+        {
+            timers_[n].nextTrigger = 0;
+            if (debug_)
+            {
+                Serial.println("MessageQueue: pause_timer(), id=");
+            }
+            return;
+        }
+    }
+    if (debug_)
+    {
+        Serial.print("MessageQueue: pause_timer() failed, id=");
+        Serial.println(id);
+    }
+}
+
 void MessageQueue::check_timers()
 {
     unsigned long now = millis();

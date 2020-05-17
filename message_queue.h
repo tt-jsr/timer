@@ -88,7 +88,13 @@ public:
     void reset_timer(int id, unsigned long interval, bool repeat);
 
     // Reset a timer
+    // On a running timer will reset the next trigger to be the interval from now.
+    // On fired non-repeating timer, will restart it.
+    // On a paused timer, will restart it.
     void reset_timer(int id);
+
+    // Pause a timer. Use reset() to restart it
+    void pause_timer(int id);
 
     // Cancel a timer given the id
     void cancel_timer(int id);
