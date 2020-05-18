@@ -27,6 +27,7 @@ MessageQueue::MessageQueue()
         pins_[i].pin = 0;
         pins_[i].debounceTime = 0;
         pins_[i].triggerComplete = 0;
+        pins_[i].debounceValue = 0;
     }
     for (int i = 0; i < MAX_VALUES; ++i)
     {
@@ -134,8 +135,8 @@ void MessageQueue::cancel_timer(int id)
     {
         if (timers_[n].id == id)
         {
-            timers_[n].interval = 0;
             timers_[n].id = 0;
+            timers_[n].interval = 0;
             timers_[n].repeat = false;
             timers_[n].nextTrigger = 0;
             if (debug_)
@@ -323,12 +324,16 @@ void MessageQueue::digital_check(Pin& pin)
     }
     else if(pin.triggerComplete == 0)
     {
+        pin.debounceValue = s;
         pin.triggerComplete = micros() + pin.debounceTime;
     }
     else if (pin.triggerComplete < micros())
     {
-        set_value(pin.id, s);
-        pin.triggerComplete = 0;
+        if (pin.debounceValue == s)
+        {
+            pin.triggerComplete = 0;
+            set_value(pin.id, s);
+        }
     }
 }
 

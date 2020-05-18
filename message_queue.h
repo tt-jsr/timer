@@ -15,7 +15,7 @@ const int USER_EVENT_BASE = 32004;
 // Each timer consumes 12 bytes
 #define MAX_TIMERS   5
 
-// Each pin consumes 18 bytes
+// Each pin consumes 20 bytes
 // Set to the number of pins you will use for the
 // message queue digitalRead() or analogRead() events. Do not set this
 // to the number of pins supported by your board.
@@ -78,8 +78,6 @@ public:
     // arg1: id
     // arg0: The number of milliseconds the timer is late from when 
     //       it was supposed to fire
-    //
-    // A non repeating timer can be reset with reset_timer
     bool create_timer(int id, unsigned long interval_ms, bool repeat);
 
     // Reset a timer.

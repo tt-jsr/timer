@@ -23,6 +23,7 @@ struct Pin
     bool digitalRead;
     unsigned long  debounceTime;  
     unsigned long  triggerComplete;    
+    int debounceValue;
 };
 
 struct Value
