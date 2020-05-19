@@ -329,9 +329,9 @@ void MessageQueue::digital_check(Pin& pin)
     }
     else if (pin.triggerComplete < micros())
     {
+        pin.triggerComplete = 0;
         if (pin.debounceValue == s)
         {
-            pin.triggerComplete = 0;
             set_value(pin.id, s);
         }
     }
