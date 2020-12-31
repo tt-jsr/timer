@@ -4,7 +4,7 @@
 #include <Fonts/FreeSans18pt7b.h>
 #include "timer.h"
 
-namespace display_ns
+namespace timer_display_ns
 {
     bool debug = false;
     int TEXT_HEIGHT = 0;
@@ -44,7 +44,7 @@ namespace display_ns
             display.setCursor(x, y);
         display.print(text);
         if (flags & FLAG_DISPLAY)
-            display_ns::display.display();
+            timer_display_ns::display.display();
     }
 
     void showTimerExpired(int timerno, int secs)
@@ -69,14 +69,14 @@ namespace display_ns
       if (recording)
           rec = "(Rec)";
       snprintf(buf, sizeof(buf), "%d Expired %s", timerno, rec);
-      display_ns::print(
-        display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_LINES
+      timer_display_ns::print(
+        timer_display_ns::FLAG_CLEAR | timer_display_ns::FLAG_SMALL_FONT | timer_display_ns::FLAG_LINES
         , 0, 0
         , buf);
 
       snprintf(buf, sizeof(buf), "%d:%02d", min, secs);
-      display_ns::print(
-        display_ns::FLAG_LARGE_FONT | FLAG_DISPLAY
+      timer_display_ns::print(
+        timer_display_ns::FLAG_LARGE_FONT | FLAG_DISPLAY
         , TIMER_X, TIMER_Y
         , buf);
     }
@@ -94,8 +94,8 @@ namespace display_ns
       int min = secs/60;
       secs = secs - min*60;
       snprintf(buf, sizeof(buf), "Timer %d", timerno);
-      display_ns::print(
-        display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_LINES
+      timer_display_ns::print(
+        timer_display_ns::FLAG_CLEAR | timer_display_ns::FLAG_SMALL_FONT | timer_display_ns::FLAG_LINES
         , 0, 0
         , buf);
 
@@ -103,22 +103,22 @@ namespace display_ns
         snprintf(buf, sizeof(buf), "%d:%02d:%02d", hours, min, secs);
       else
         snprintf(buf, sizeof(buf), "%d:%02d", min, secs);
-      display_ns::print(
-        display_ns::FLAG_LARGE_FONT | FLAG_DISPLAY
+      timer_display_ns::print(
+        timer_display_ns::FLAG_LARGE_FONT | FLAG_DISPLAY
         , TIMER_X, TIMER_Y
         , buf);
     }
 
     void showNoTimers()
     {
-        display_ns::setSmallFont();
+        timer_display_ns::setSmallFont();
         int x, y, w, h;
-        display_ns::display.getTextBounds("No timers", 0, 0, &x, &y, &w, &h);
+        timer_display_ns::display.getTextBounds("No timers", 0, 0, &x, &y, &w, &h);
         y = 64/2+h/2;
         x = 128/2-w/2;
 
-        display_ns::print(
-            display_ns::FLAG_CLEAR | FLAG_DISPLAY
+        timer_display_ns::print(
+            timer_display_ns::FLAG_CLEAR | FLAG_DISPLAY
             , x, y
             , "No timers");
     }

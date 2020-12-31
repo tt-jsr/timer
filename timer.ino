@@ -20,7 +20,7 @@ void setup()
   pinMode(PIN_HOOK, INPUT_PULLUP);
 
   bool debug = false;
-  display_ns::setup(debug);
+  timer_display_ns::setup(debug);
   timer_ns::setup(debug);
   keypad_ns::setup(false);
   audio_ns::setup(false);

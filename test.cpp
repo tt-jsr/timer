@@ -7,13 +7,13 @@
 
 void TimerTest::setup(bool dbg)
 {
-  display_ns::setSmallFont();
+  timer_display_ns::setSmallFont();
 
   timerno_ = timer_ns::createTimer(1*60+13);
   if (timerno_ < 0)
   {
-      display_ns::display.print("error");
-      display_ns::display.display();
+      timer_display_ns::display.print("error");
+      timer_display_ns::display.display();
       for(;;);
   }
 }
@@ -22,9 +22,9 @@ void TimerTest::loop()
 {
  int timeRemaining = timer_ns::timeRemaining(timerno_);
  if (timeRemaining < 0)
-     display_ns::showTimerExpired(timerno_, timeRemaining);
+     timer_display_ns::showTimerExpired(timerno_, timeRemaining);
  else
-     display_ns::showTimerRunning(timerno_, timeRemaining);
+     timer_display_ns::showTimerRunning(timerno_, timeRemaining);
   delay(1000);
 }
 
@@ -32,21 +32,21 @@ void TimerTest::loop()
 
 void KeypadTest::setup(bool dbg)
 {
-    display_ns::setSmallFont();
-    display_ns::display.setCursor(0,display_ns::TEXT_HEIGHT);
+    timer_display_ns::setSmallFont();
+    timer_display_ns::display.setCursor(0, timer_display_ns::TEXT_HEIGHT);
     nchar = 0;
-    display_ns::display.display();
+    timer_display_ns::display.display();
 }
 
 void KeypadTest::loop()
 {
     char c  = keypad_ns::getKey();
-    display_ns::display.print(c);
-    display_ns::display.display();
+    timer_display_ns::display.print(c);
+    timer_display_ns::display.display();
     ++nchar;
     if (nchar > 20)
     {
-        display_ns::clearDisplay();
+        timer_display_ns::clearDisplay();
         nchar = 0;
     }
 }

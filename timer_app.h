@@ -22,6 +22,9 @@ static const int TURN_BUZZER_OFF = 0;
 
 struct AppMessageQueue : MessageQueue
 {
+    AppMessageQueue(int msg, int timers, int pins, int values, int pulses)
+    :MessageQueue(msg, timers, pins, values, pulses)
+    {}
     void OnGenerator();
 };
 

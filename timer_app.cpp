@@ -15,6 +15,7 @@ TimerApp::TimerApp()
 ,recordingTimer_(timer_ns::TIMER_INVALID)
 ,playingTimer_(timer_ns::TIMER_INVALID)
 ,ungetc_(0)
+,messageQueue_(8, 5, 4, 2, 1)
 ,debug_(false)
 {
 }
@@ -23,8 +24,8 @@ int TimerApp::inputTime(char c)
 {
     TimerBuffer tbuf;
 
-    display_ns::print(
-            display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_DISPLAY | display_ns::FLAG_LINES, 
+    timer_display_ns::print(
+            timer_display_ns::FLAG_CLEAR | timer_display_ns::FLAG_SMALL_FONT | timer_display_ns::FLAG_DISPLAY | timer_display_ns::FLAG_LINES, 
             0, 0, 
             "Enter time:");
 
@@ -55,8 +56,8 @@ int TimerApp::inputTime(char c)
             break;
         }
 
-        display_ns::print(
-            display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_LINES
+        timer_display_ns::print(
+            timer_display_ns::FLAG_CLEAR | timer_display_ns::FLAG_SMALL_FONT | timer_display_ns::FLAG_LINES
             , 0, 0
             , "Enter time:");
 
@@ -64,9 +65,9 @@ int TimerApp::inputTime(char c)
         char dbuf[10];
         tbuf.format(dbuf, sizeof(dbuf));
 
-        display_ns::print(
-            display_ns::FLAG_LARGE_FONT | display_ns::FLAG_DISPLAY
-            , display_ns::TIMER_X, display_ns::TIMER_Y 
+        timer_display_ns::print(
+            timer_display_ns::FLAG_LARGE_FONT | timer_display_ns::FLAG_DISPLAY
+            , timer_display_ns::TIMER_X, timer_display_ns::TIMER_Y 
             , dbuf);
     }
 }
@@ -135,13 +136,13 @@ int TimerApp::OnDrawTimer()
     {
         int timeRemaining = timer_ns::timeRemaining(currentTimer_);
         if (timeRemaining < 0)
-            display_ns::showTimerExpired(currentTimer_, timeRemaining);
+            timer_display_ns::showTimerExpired(currentTimer_, timeRemaining);
         else
-            display_ns::showTimerRunning(currentTimer_, timeRemaining);
+            timer_display_ns::showTimerRunning(currentTimer_, timeRemaining);
     }
     else
     {
-        display_ns::showNoTimers();
+        timer_display_ns::showNoTimers();
     }
 
     return 0;
@@ -182,8 +183,8 @@ void TimerApp::OnSwitchHookDown()
 void TimerApp::PlayMessage(int timerno)
 {
     playingTimer_ = timerno;
-    display_ns::print(
-        display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_DISPLAY | display_ns::FLAG_LINES
+    timer_display_ns::print(
+        timer_display_ns::FLAG_CLEAR | timer_display_ns::FLAG_SMALL_FONT | timer_display_ns::FLAG_DISPLAY | timer_display_ns::FLAG_LINES
         , 0, 0
         , "Playing\n   message...");
     audio_ns::startPlaying(timerno);
@@ -199,8 +200,8 @@ void TimerApp::StartRecording(int timerno)
 {
     recordingTimer_ = timerno; 
                             // STOP_RECORDING will then start the timer
-    display_ns::print(
-        display_ns::FLAG_CLEAR | display_ns::FLAG_SMALL_FONT | display_ns::FLAG_DISPLAY | display_ns::FLAG_LINES
+    timer_display_ns::print(
+        timer_display_ns::FLAG_CLEAR | timer_display_ns::FLAG_SMALL_FONT | timer_display_ns::FLAG_DISPLAY | timer_display_ns::FLAG_LINES
         , 0, 0
         , "Record\n   message...");
 
@@ -399,8 +400,8 @@ void TimerApp::setup(bool debug)
 {
     debug_ = debug;
     messageQueue_.setDebug(true);
-    display_ns::display.clearDisplay();
-    display_ns::showNoTimers();
+    timer_display_ns::display.clearDisplay();
+    timer_display_ns::showNoTimers();
     messageQueue_.digitalRead(HOOK_STATE, PIN_HOOK, HIGH, 1000);
     messageQueue_.create_timer(DRAW_TIMER, 500, true);
     messageQueue_.create_timer(CHECK_TIMERS, 500, true);

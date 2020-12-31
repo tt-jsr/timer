@@ -74,7 +74,7 @@ namespace timer_ns
 /********************************************
  * Display functions
  */
-namespace display_ns
+namespace timer_display_ns
 {
     // Display settings
     static const int SCREEN_WIDTH = 128;
