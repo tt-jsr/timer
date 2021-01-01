@@ -35,7 +35,8 @@ int TimerApp::inputTime(char c)
     }
     while(true)
     {
-        int msg, arg1, arg2;
+        int msg, arg1;
+        unsigned long arg2;
         messageQueue_.get_message(msg, arg1, arg2);
         //printMessage("inputTime", msg, arg1, arg2);
         switch (msg)
@@ -247,7 +248,7 @@ int TimerApp::OnBuzzerTimer()
     return 0;
 }
 
-void TimerApp::OnUnknown(char *p, int arg1, int arg2)
+void TimerApp::OnUnknown(char *p, int arg1, unsigned long arg2)
 {
     Serial.print("unknown msg: ");
     Serial.print(p);
@@ -316,7 +317,7 @@ void TimerApp::OnKeyEvent(char character)
     }
 }
 
-void TimerApp::OnValueEvent(int id, int value)
+void TimerApp::OnValueEvent(int id, unsigned long value)
 {
     switch (id)
     {
@@ -342,7 +343,8 @@ void TimerApp::OnIdleEvent()
 void TimerApp::loop()
 {
     // Process a message from the queue
-    int msg, arg1, arg2;
+    int msg, arg1;
+    unsigned long arg2;
     messageQueue_.get_message(msg, arg1, arg2);
 
     //printMessage("loop", msg, arg1, arg2);
@@ -371,7 +373,7 @@ void TimerApp::loop()
 
 }
 
-void TimerApp::printMessage(char *text, int msg, int arg1, int arg2)
+void TimerApp::printMessage(char *text, int msg, int arg1, unsigned long arg2)
 {
     char buf[128];
     buf[0] = '\0';
@@ -384,13 +386,13 @@ void TimerApp::printMessage(char *text, int msg, int arg1, int arg2)
         //sprintf(buf, "%s: msg: IDLE_EVENT, arg: %d", text, arg1);
         break;
     case VALUE_EVENT:
-        sprintf(buf, "%s: msg: VALUE_EVENT, id: %d value: %d", text, arg1, arg2);
+        sprintf(buf, "%s: msg: VALUE_EVENT, id: %d value: %ld", text, arg1, arg2);
         break;
     case KEY_EVENT:
         sprintf(buf, "%s: msg: KEY_EVENT, char: %c", text, arg1);
         break;
     default:
-        sprintf(buf, "%s: msg: %d, arg1: %d, arg2: %d", text, msg, arg1, arg2);
+        sprintf(buf, "%s: msg: %d, arg1: %d, arg2: %ld", text, msg, arg1, arg2);
     }
     if (buf[0])
         Serial.println(buf);

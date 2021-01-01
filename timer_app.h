@@ -36,8 +36,8 @@ struct TimerApp : public Application
     void OnKeyEvent(char c);
     void OnTimerEvent(int id);
     void OnIdleEvent();
-    void OnValueEvent(int id, int value);
-    void OnUnknown(char *, int arg1, int arg2);
+    void OnValueEvent(int id, unsigned long value);
+    void OnUnknown(char *, int arg1, unsigned long arg2);
     int OnCheckForExpiredTimers();
     int OnDrawTimer();
     int OnBuzzerTimer();
@@ -62,7 +62,7 @@ struct TimerApp : public Application
     void read_keypad_ungetc(char c);
 
     // Debug helper
-    void printMessage(char *text, int msg, int arg1, int arg2);
+    void printMessage(char *text, int msg, int arg1, unsigned long arg2);
 
     void loop();
     void setup(bool debug);
