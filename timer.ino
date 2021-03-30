@@ -17,7 +17,6 @@ void setup()
   pinMode(PIN_RCLK, OUTPUT);
   pinMode(PIN_AUDIO_CS, OUTPUT);
   pinMode(PIN_BUZZER, OUTPUT);
-  pinMode(PIN_HOOK, INPUT_PULLUP);
 
   bool debug = false;
   timer_display_ns::setup(debug);
