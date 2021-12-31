@@ -6,10 +6,10 @@
 
 const int KEY_EVENT = USER_EVENT_BASE;
 // id's
-static const int BUZZER_TIMER = 1;
+//static const int BUZZER_TIMER = 1;
 static const int DRAW_TIMER = 2;
 static const int CHECK_TIMERS = 3;
-static const int BUZZER_STATE = 4;
+//static const int BUZZER_STATE = 4;
 static const int HOOK_STATE = 5;
 
 // HOOK_STATE Values
@@ -17,13 +17,13 @@ static const int SWITCH_HOOK_UP = LOW;
 static const int SWITCH_HOOK_DOWN = HIGH;
 
 // BUZZER_STATE values
-static const int TURN_BUZZER_ON = 1;
-static const int TURN_BUZZER_OFF = 0;
+//static const int TURN_BUZZER_ON = 1;
+//static const int TURN_BUZZER_OFF = 0;
 
 struct AppMessageQueue : MessageQueue
 {
-    AppMessageQueue(int msg, int timers, int pins, int values, int pulses)
-    :MessageQueue(msg, timers, pins, values, pulses)
+    AppMessageQueue(int msg)
+    :MessageQueue(msg)
     {}
     void OnGenerator();
 };
@@ -36,12 +36,12 @@ struct TimerApp : public Application
     void OnKeyEvent(char c);
     void OnTimerEvent(int id);
     void OnIdleEvent();
-    void OnValueEvent(int id, unsigned long value);
+    void OnDigitalEvent(int id, unsigned long value);
     void OnUnknown(char *, int arg1, unsigned long arg2);
     int OnCheckForExpiredTimers();
     int OnDrawTimer();
-    int OnBuzzerTimer();
-    int OnBuzzerStateChange(int value);
+    //int OnBuzzerTimer();
+    //int OnBuzzerStateChange(int value);
 
     // Functions
     int CreateNewTimer(char c);
@@ -70,7 +70,7 @@ struct TimerApp : public Application
 
 // data
     int currentTimer_;      // The current timerno being displayed
-    bool buzzerRunning_;    // Buzzer is running. This means BUZZER timer event is running
+    //bool buzzerRunning_;    // Buzzer is running. This means BUZZER timer event is running
     int recordingTimer_;    // The timer being recorded
     int playingTimer_;      // The timer being played
     char ungetc_;           
